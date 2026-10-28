@@ -1,188 +1,2379 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Fish Swimming</title>
-  <style>
-    html, body { margin: 0; padding: 0; overflow: hidden; }
-    canvas { display: block; }
-  </style>
-  <script src="https://cdn.jsdelivr.net/npm/p5@1.11.3/lib/p5.min.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Windows Mail</title>
+<style>
+  :root {
+    --win-bg: #c0c0c0;
+    --win-dark: #808080;
+    --win-darker: #404040;
+    --win-light: #dfdfdf;
+    --win-lighter: #ffffff;
+    --win-title: #000080;
+    --win-title-inactive: #808080;
+    --win-selected: #000080;
+    --win-selected-text: #ffffff;
+    --win-blue: #0000aa;
+    --win-blue-light: #4444dd;
+    --win-yellow: #ffff00;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'MS Sans Serif', 'Microsoft Sans Serif', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 13px;
+    background: #008080;
+    height: 100vh;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    line-height: 1.2;
+  }
+
+  /* ========== WIN95 STYLES ========== */
+  .win-raised {
+    background: var(--win-bg);
+    border-top: 2px solid var(--win-lighter);
+    border-left: 2px solid var(--win-lighter);
+    border-bottom: 2px solid var(--win-darker);
+    border-right: 2px solid var(--win-darker);
+  }
+
+  .win-sunken {
+    background: var(--win-bg);
+    border-top: 2px solid var(--win-darker);
+    border-left: 2px solid var(--win-darker);
+    border-bottom: 2px solid var(--win-lighter);
+    border-right: 2px solid var(--win-lighter);
+  }
+
+  .win-sunken-dark {
+    background: #fff;
+    border-top: 2px solid var(--win-dark);
+    border-left: 2px solid var(--win-dark);
+    border-bottom: 2px solid var(--win-lighter);
+    border-right: 2px solid var(--win-lighter);
+  }
+
+  .win-btn {
+    background: var(--win-bg);
+    border-top: 2px solid var(--win-lighter);
+    border-left: 2px solid var(--win-lighter);
+    border-bottom: 2px solid var(--win-darker);
+    border-right: 2px solid var(--win-darker);
+    padding: 2px 8px;
+    font-family: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    outline: none;
+    white-space: nowrap;
+    line-height: 1.2;
+  }
+  .win-btn:active {
+    border-top: 2px solid var(--win-darker);
+    border-left: 2px solid var(--win-darker);
+    border-bottom: 2px solid var(--win-lighter);
+    border-right: 2px solid var(--win-lighter);
+    padding: 3px 7px 1px 9px;
+  }
+  .win-btn:focus {
+    outline: 1px dotted #000;
+    outline-offset: -4px;
+  }
+
+  .win-btn-small {
+    background: var(--win-bg);
+    border-top: 2px solid var(--win-lighter);
+    border-left: 2px solid var(--win-lighter);
+    border-bottom: 2px solid var(--win-darker);
+    border-right: 2px solid var(--win-darker);
+    width: 22px; height: 22px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 13px;
+    padding: 0;
+    line-height: 1;
+  }
+  .win-btn-small:active {
+    border-top: 2px solid var(--win-darker);
+    border-left: 2px solid var(--win-darker);
+    border-bottom: 2px solid var(--win-lighter);
+    border-right: 2px solid var(--win-lighter);
+  }
+
+  /* ========== MAIN WINDOW ========== */
+  .app-window {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--win-bg);
+  }
+
+  /* Title bar */
+  .title-bar {
+    background: var(--win-title);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    padding: 2px 4px;
+    height: 22px;
+    flex-shrink: 0;
+  }
+  .title-bar-icon {
+    width: 16px; height: 16px;
+    margin-right: 4px;
+    background: #c0c0c0;
+    border: 1px solid #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    color: #000;
+  }
+  .title-bar-text {
+    flex: 1;
+    font-weight: bold;
+    font-size: 13px;
+    line-height: 1.2;
+  }
+  .title-bar-controls {
+    display: flex; gap: 2px;
+  }
+  .title-bar-controls button {
+    width: 18px; height: 16px;
+    background: var(--win-bg);
+    border-top: 1px solid #fff;
+    border-left: 1px solid #fff;
+    border-bottom: 1px solid #000;
+    border-right: 1px solid #000;
+    font-size: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0;
+    line-height: 1;
+  }
+
+  /* Menu bar */
+  .menu-bar {
+    display: flex;
+    padding: 1px 0;
+    background: var(--win-bg);
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--win-dark);
+  }
+  .menu-item {
+    padding: 2px 10px;
+    font-size: 13px;
+    cursor: pointer;
+    position: relative;
+    line-height: 1.2;
+  }
+  .menu-item:hover { background: var(--win-selected); color: var(--win-selected-text); }
+  .menu-item .dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: var(--win-bg);
+    border-top: 2px solid var(--win-darker);
+    border-left: 2px solid var(--win-darker);
+    border-bottom: 2px solid #fff;
+    border-right: 2px solid #fff;
+    min-width: 200px;
+    z-index: 1000;
+    padding: 2px;
+  }
+  .menu-item:hover .dropdown { display: block; }
+  .dropdown-item {
+    padding: 2px 16px 2px 20px;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+    line-height: 1.2;
+  }
+  .dropdown-item:hover { background: var(--win-selected); color: var(--win-selected-text); }
+  .dropdown-item.disabled { color: var(--win-dark); pointer-events: none; }
+  .dropdown-sep {
+    height: 1px;
+    background: var(--win-dark);
+    margin: 3px 2px;
+    border-bottom: 1px solid #fff;
+  }
+  .dropdown-item .shortcut { float: right; margin-left: 20px; color: var(--win-dark); }
+  .dropdown-item:hover .shortcut { color: var(--win-selected-text); }
+
+  /* Toolbar */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    padding: 2px 4px;
+    gap: 2px;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--win-dark);
+    background: var(--win-bg);
+  }
+  .toolbar .separator {
+    width: 1px; height: 22px;
+    border-left: 1px solid var(--win-dark);
+    border-right: 1px solid #fff;
+    margin: 0 4px;
+  }
+  .toolbar-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 8px;
+    min-width: 32px;
+    cursor: pointer;
+    font-size: 11px;
+    color: #000;
+    border: 1px solid transparent;
+    background: none;
+    gap: 2px;
+    line-height: 1.2;
+  }
+  .toolbar-btn:hover { border: 1px dotted #000; }
+  .toolbar-btn .tb-icon {
+    width: 22px; height: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+
+  /* ========== BODY ========== */
+  .body-area {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* Folder pane (left) */
+  .folder-pane {
+    width: 200px;
+    min-width: 160px;
+    background: var(--win-bg);
+    border-right: 2px solid var(--win-dark);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow-y: auto;
+  }
+  .folder-pane-header {
+    padding: 3px 8px;
+    font-weight: bold;
+    font-size: 13px;
+    border-bottom: 1px solid var(--win-dark);
+    background: var(--win-bg);
+    line-height: 1.2;
+  }
+  .folder-tree { list-style: none; padding: 2px 0; }
+  .folder-item {
+    display: flex;
+    align-items: center;
+    padding: 2px 6px 2px 10px;
+    cursor: pointer;
+    font-size: 13px;
+    gap: 6px;
+    white-space: nowrap;
+    line-height: 1.2;
+  }
+  .folder-item:hover { background: #e0e0e0; }
+  .folder-item.active {
+    background: var(--win-selected);
+    color: var(--win-selected-text);
+  }
+  .folder-icon {
+    font-size: 14px;
+    width: 16px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .folder-count {
+    font-size: 11px;
+    color: var(--win-dark);
+    margin-left: auto;
+    padding-left: 4px;
+  }
+  .folder-item.active .folder-count { color: #ccc; }
+  .folder-group-label {
+    padding: 4px 8px 2px 10px;
+    font-size: 12px;
+    color: var(--win-dark);
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* ========== RESIZE HANDLE ========== */
+  .resize-handle {
+    width: 6px;
+    cursor: col-resize;
+    background: var(--win-bg);
+    border-right: 1px solid var(--win-dark);
+    border-left: 1px solid #fff;
+    flex-shrink: 0;
+  }
+
+  /* ========== CONTENT PANE ========== */
+  .content-pane {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: #fff;
+  }
+
+  /* Email list (top of content) */
+  .email-list-pane {
+    flex: 0.7;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background: #fff;
+  }
+
+  /* Column headers */
+  .col-headers {
+    display: flex;
+    background: var(--win-bg);
+    border-bottom: 1px solid var(--win-dark);
+    flex-shrink: 0;
+    font-size: 13px;
+  }
+  .col-header {
+    padding: 2px 6px;
+    border-right: 1px solid var(--win-dark);
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    line-height: 1.2;
+  }
+  .col-header:hover { background: #e0e0e0; }
+  .col-header .arrow { font-size: 9px; }
+
+  /* Email rows */
+  .email-list {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: #fff;
+  }
+  .email-row {
+    display: flex;
+    align-items: center;
+    padding: 2px 4px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 13px;
+    line-height: 1.2;
+  }
+  .email-row:hover { background: #e8e8ff; }
+  .email-row.selected {
+    background: var(--win-selected);
+    color: var(--win-selected-text);
+  }
+  .email-row.unread .row-from {
+    font-weight: bold;
+    color: #0000aa;
+  }
+  .email-row.unread .row-subject {
+    font-weight: bold;
+    color: #000;
+  }
+  .email-row.selected .row-from,
+  .email-row.selected .row-subject {
+    color: #fff;
+  }
+  .email-row.selected.unread .row-from {
+    color: #fff;
+  }
+  .row-check {
+    width: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .row-check input[type="checkbox"] {
+    cursor: pointer;
+    accent-color: var(--win-selected);
+    width: 14px;
+    height: 14px;
+  }
+  .row-star {
+    width: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--win-dark);
+  }
+  .row-star.starred { color: #cc8800; }
+  .row-from {
+    flex: 0 0 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 0 4px;
+  }
+  .row-subject {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 0 4px;
+  }
+  .row-date {
+    flex: 0 0 80px;
+    text-align: right;
+    padding: 0 8px 0 4px;
+    white-space: nowrap;
+    font-size: 13px;
+  }
+  .row-attach {
+    width: 18px;
+    text-align: center;
+    flex-shrink: 0;
+    font-size: 12px;
+    padding: 0 4px;
+  }
+
+  /* ========== SPLIT VIEW (detail) ========== */
+  .split-divider {
+    height: 6px;
+    cursor: row-resize;
+    background: var(--win-bg);
+    border-top: 1px solid var(--win-dark);
+    border-bottom: 1px solid #fff;
+    flex-shrink: 0;
+  }
+
+  .detail-pane {
+    flex: 1;
+    display: none;
+    flex-direction: column;
+    min-height: 120px;
+    overflow: hidden;
+    border-top: 2px solid var(--win-dark);
+    border-left: 2px solid var(--win-dark);
+    border-bottom: 2px solid #fff;
+    border-right: 2px solid #fff;
+    background: #fff;
+  }
+  .detail-pane.visible { display: flex; }
+
+  .detail-header {
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--win-dark);
+    background: var(--win-bg);
+    flex-shrink: 0;
+  }
+  .detail-subject {
+    font-weight: bold;
+    font-size: 12px;
+    margin-bottom: 4px;
+    line-height: 1.2;
+  }
+  .detail-meta {
+    font-size: 11px;
+    color: #444;
+    line-height: 1.5;
+  }
+  .detail-meta div { margin-bottom: 2px; }
+  .detail-meta span.label { color: #000; font-weight: bold; min-width: 48px; display: inline-block; }
+
+  .detail-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 14px;
+    background: #fff;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #000;
+  }
+  .detail-body p { margin-bottom: 8px; }
+
+  .detail-reply {
+    padding: 4px 12px;
+    border-top: 1px solid var(--win-dark);
+    background: var(--win-bg);
+    display: flex;
+    gap: 4px;
+    align-items: flex-end;
+    flex-shrink: 0;
+  }
+  .detail-reply textarea {
+    flex: 1;
+    height: 50px;
+    font-family: 'MS Sans Serif', 'Microsoft Sans Serif', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 12px;
+    border-top: 2px solid var(--win-dark);
+    border-left: 2px solid var(--win-dark);
+    border-bottom: 2px solid #fff;
+    border-right: 2px solid #fff;
+    padding: 3px 5px;
+    resize: none;
+    outline: none;
+    background: #fff;
+  }
+  .detail-reply button { flex-shrink: 0; }
+
+  /* ========== STATUS BAR ========== */
+  .status-bar {
+    display: flex;
+    align-items: center;
+    padding: 2px 4px;
+    background: var(--win-bg);
+    height: 22px;
+    flex-shrink: 0;
+    border-top: 1px solid var(--win-dark);
+    font-size: 13px;
+  }
+  .status-section {
+    padding: 0 8px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    line-height: 1.2;
+  }
+  .status-section:first-child { flex: 1; }
+  .status-section.border-right {
+    border-right: 1px solid var(--win-dark);
+    border-left: 1px solid #fff;
+    min-width: 100px;
+  }
+  .status-section.count {
+    border-right: 1px solid var(--win-dark);
+    border-left: 1px solid #fff;
+    min-width: 80px;
+    justify-content: center;
+  }
+
+  /* ========== COMPOSE WINDOW ========== */
+  .compose-window {
+    position: fixed;
+    display: none;
+    flex-direction: column;
+    z-index: 500;
+    background: var(--win-bg);
+    min-width: 520px;
+    min-height: 380px;
+  }
+  .compose-window.open { display: flex; }
+
+  .compose-title-bar {
+    background: var(--win-title);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    padding: 2px 4px;
+    height: 22px;
+    flex-shrink: 0;
+    cursor: move;
+  }
+  .compose-title-bar .title-bar-text { font-size: 13px; font-weight: bold; line-height: 1.2; }
+
+  .compose-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 6px;
+    overflow: hidden;
+  }
+
+  .compose-field {
+    display: flex;
+    align-items: center;
+    padding: 2px 0;
+    font-size: 13px;
+    line-height: 1.2;
+  }
+  .compose-field label {
+    min-width: 50px;
+    padding-right: 8px;
+    text-align: right;
+  }
+  .compose-field input {
+    flex: 1;
+    border-top: 2px solid var(--win-dark);
+    border-left: 2px solid var(--win-dark);
+    border-bottom: 2px solid #fff;
+    border-right: 2px solid #fff;
+    padding: 2px 6px;
+    font-family: inherit;
+    font-size: 13px;
+    outline: none;
+    background: #fff;
+    line-height: 1.2;
+  }
+
+  .compose-textarea {
+    flex: 1;
+    border-top: 2px solid var(--win-dark);
+    border-left: 2px solid var(--win-dark);
+    border-bottom: 2px solid #fff;
+    border-right: 2px solid #fff;
+    padding: 6px 8px;
+    font-family: 'MS Sans Serif', 'Microsoft Sans Serif', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 13px;
+    resize: none;
+    outline: none;
+    background: #fff;
+    margin-top: 4px;
+    min-height: 140px;
+    line-height: 1.4;
+  }
+
+  .compose-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 4px;
+    padding: 6px 6px 4px;
+  }
+
+  /* ========== EMPTY STATE ========== */
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--win-dark);
+    font-size: 14px;
+    gap: 8px;
+  }
+  .empty-state .empty-icon { font-size: 40px; opacity: 0.4; }
+
+  /* ========== SCROLLBAR ========== */
+  ::-webkit-scrollbar { width: 16px; }
+  ::-webkit-scrollbar-track {
+    background: repeating-conic-gradient(var(--win-bg) 0% 25%, #fff 0% 50%) 50% / 2px 2px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--win-bg);
+    border-top: 2px solid #fff;
+    border-left: 2px solid #fff;
+    border-bottom: 2px solid var(--win-darker);
+    border-right: 2px solid var(--win-darker);
+  }
+  ::-webkit-scrollbar-button {
+    background: var(--win-bg);
+    border-top: 2px solid #fff;
+    border-left: 2px solid #fff;
+    border-bottom: 2px solid var(--win-darker);
+    border-right: 2px solid var(--win-darker);
+    height: 16px;
+  }
+
+  /* ========== CONTEXT MENU ========== */
+  .context-menu {
+    position: fixed;
+    display: none;
+    background: var(--win-bg);
+    border-top: 2px solid var(--win-darker);
+    border-left: 2px solid var(--win-darker);
+    border-bottom: 2px solid #fff;
+    border-right: 2px solid #fff;
+    z-index: 2000;
+    padding: 2px;
+    min-width: 160px;
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+  }
+  .context-menu.open { display: block; }
+  .context-item {
+    padding: 2px 16px 2px 20px;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+    line-height: 1.2;
+  }
+  .context-item:hover { background: var(--win-selected); color: var(--win-selected-text); }
+  .context-sep {
+    height: 1px;
+    background: var(--win-dark);
+    margin: 3px 2px;
+    border-bottom: 1px solid #fff;
+  }
+
+  /* ========== MSG BOX ========== */
+  .msg-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.2);
+    z-index: 3000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .msg-overlay.open { display: flex; }
+  .msg-box {
+    background: var(--win-bg);
+    border-top: 2px solid #fff;
+    border-left: 2px solid #fff;
+    border-bottom: 2px solid var(--win-darker);
+    border-right: 2px solid var(--win-darker);
+    min-width: 340px;
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.4);
+  }
+  .msg-title-bar {
+    background: var(--win-title);
+    color: #fff;
+    padding: 2px 4px;
+    display: flex;
+    align-items: center;
+    height: 22px;
+    font-size: 13px;
+    font-weight: bold;
+    line-height: 1.2;
+  }
+  .msg-title-bar button {
+    width: 18px; height: 16px;
+    background: var(--win-bg);
+    border-top: 1px solid #fff;
+    border-left: 1px solid #fff;
+    border-bottom: 1px solid #000;
+    border-right: 1px solid #000;
+    font-size: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-left: 4px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0;
+    line-height: 1;
+  }
+  .msg-body {
+    padding: 12px 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  .msg-icon { font-size: 32px; flex-shrink: 0; }
+  .msg-text { flex: 1; }
+  .msg-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 16px 10px;
+  }
+  .msg-buttons .win-btn { min-width: 75px; }
+
+  /* ========== PROGRESS BAR ========== */
+  .progress-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.15);
+    z-index: 2500;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .progress-overlay.open { display: flex; }
+  .progress-box {
+    background: var(--win-bg);
+    border-top: 2px solid #fff;
+    border-left: 2px solid #fff;
+    border-bottom: 2px solid var(--win-darker);
+    border-right: 2px solid var(--win-darker);
+    padding: 12px 16px;
+    min-width: 360px;
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.3);
+  }
+  .progress-label {
+    font-size: 13px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    line-height: 1.2;
+  }
+  .progress-bar-outer {
+    height: 20px;
+    border-top: 2px solid var(--win-dark);
+    border-left: 2px solid var(--win-dark);
+    border-bottom: 2px solid #fff;
+    border-right: 2px solid #fff;
+    padding: 2px;
+    background: #fff;
+  }
+  .progress-bar-inner {
+    height: 100%;
+    background: var(--win-title);
+    width: 0%;
+    transition: width 0.1s;
+  }
+  .progress-bar-inner::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 8px,
+      rgba(255,255,255,0.3) 8px,
+      rgba(255,255,255,0.3) 10px
+    );
+  }
+  .progress-bar-outer { position: relative; overflow: hidden; }
+  .progress-bar-inner { position: relative; }
+  .progress-bar-inner::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 4px,
+      rgba(0,0,0,0.1) 4px,
+      rgba(0,0,0,0.1) 6px
+    );
+  }
+
+  /* ========== NOTIFICATION ========== */
+  .notification-area {
+    position: fixed;
+    bottom: 28px;
+    right: 8px;
+    z-index: 4000;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .notification {
+    background: var(--win-bg);
+    border-top: 2px solid #fff;
+    border-left: 2px solid #fff;
+    border-bottom: 2px solid var(--win-darker);
+    border-right: 2px solid var(--win-darker);
+    padding: 4px 10px;
+    font-size: 13px;
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    animation: slideIn 0.2s ease;
+    min-width: 220px;
+    line-height: 1.2;
+  }
+  @keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+</style>
 </head>
 <body>
-  <script>
-    let fishes = [];
-    let bubbles = [];
 
-    function setup() {
-      createCanvas(windowWidth, windowHeight);
-      colorMode(HSB, 360, 100, 100, 100);
-      for (let i = 0; i < 12; i++) fishes.push(new Fish(true));
+<!-- ===== MAIN WINDOW ===== -->
+<div class="app-window" id="appWindow">
+
+  <!-- Title Bar -->
+  <div class="title-bar">
+    <div class="title-bar-icon">M</div>
+    <div class="title-bar-text">Windows Mail - [Inbox]</div>
+    <div class="title-bar-controls">
+      <button title="Minimize" style="font-size:10px;">_</button>
+      <button title="Maximize" style="font-size:10px;">□</button>
+      <button title="Close" style="font-size:12px;">×</button>
+    </div>
+  </div>
+
+  <!-- Menu Bar -->
+  <div class="menu-bar">
+    <div class="menu-item">
+      File
+      <div class="dropdown">
+        <div class="dropdown-item" onclick="openCompose()">New <span class="shortcut">Ctrl+N</span></div>
+        <div class="dropdown-item" onclick="openCompose('reply')">Reply</div>
+        <div class="dropdown-item" onclick="openCompose('replyall')">Reply to All</div>
+        <div class="dropdown-item" onclick="openCompose('forward')">Forward <span class="shortcut">Ctrl+R</span></div>
+        <div class="dropdown-sep"></div>
+        <div class="dropdown-item" onclick="markAllRead()">Mark All Read</div>
+        <div class="dropdown-item" onclick="purgeDeleted()">Purge Deleted Messages</div>
+        <div class="dropdown-sep"></div>
+        <div class="dropdown-item" onclick="openCompose()">Send / Receive <span class="shortcut">F9</span></div>
+        <div class="dropdown-sep"></div>
+        <div class="dropdown-item disabled">Page Setup...</div>
+        <div class="dropdown-item disabled">Print...</div>
+        <div class="dropdown-sep"></div>
+        <div class="dropdown-item disabled">Exit</div>
+      </div>
+    </div>
+    <div class="menu-item">
+      Edit
+      <div class="dropdown">
+        <div class="dropdown-item disabled">Cut <span class="shortcut">Ctrl+X</span></div>
+        <div class="dropdown-item disabled">Copy <span class="shortcut">Ctrl+C</span></div>
+        <div class="dropdown-item disabled">Paste <span class="shortcut">Ctrl+V</span></div>
+        <div class="dropdown-sep"></div>
+        <div class="dropdown-item" onclick="toggleSelectAll()">Select All <span class="shortcut">Ctrl+A</span></div>
+        <div class="dropdown-sep"></div>
+        <div class="dropdown-item" onclick="deleteSelected()">Delete <span class="shortcut">Del</span></div>
+      </div>
+    </div>
+    <div class="menu-item">
+      View
+      <div class="dropdown">
+        <div class="dropdown-item" onclick="toggleDetailPane()">Text Pane <span class="shortcut">F8</span></div>
+        <div class="dropdown-sep"></div>
+        <div class="dropdown-item" onclick="setToolbarStyle('standard')">Standard Buttons</div>
+        <div class="dropdown-item" onclick="setToolbarStyle('web')">Web Style</div>
+        <div class="dropdown-sep"></div>
+        <div class="dropdown-item" onclick="setFontSize('small')">Small Font</div>
+        <div class="dropdown-item" onclick="setFontSize('large')">Large Font</div>
+      </div>
+    </div>
+    <div class="menu-item">
+      Go
+      <div class="dropdown">
+        <div class="dropdown-item" onclick="switchFolder('inbox')">Inbox</div>
+        <div class="dropdown-item" onclick="switchFolder('sent')">Sent Mail</div>
+        <div class="dropdown-item" onclick="switchFolder('drafts')">Drafts</div>
+        <div class="dropdown-item" onclick="switchFolder('deleted')">Deleted Mail</div>
+        <div class="dropdown-sep"></div>
+        <div class="dropdown-item" onclick="switchFolder('inbox')">Unread Mail</div>
+      </div>
+    </div>
+    <div class="menu-item">
+      Tools
+      <div class="dropdown">
+        <div class="dropdown-item disabled">Send Mail</div>
+        <div class="dropdown-item disabled">Receive Mail</div>
+        <div class="dropdown-sep"></div>
+        <div class="dropdown-item disabled">Rules...</div>
+        <div class="dropdown-item disabled">Accounts...</div>
+        <div class="dropdown-sep"></div>
+        <div class="dropdown-item disabled">Options...</div>
+      </div>
+    </div>
+    <div class="menu-item">
+      Help
+      <div class="dropdown">
+        <div class="dropdown-item disabled">Contents and Index</div>
+        <div class="dropdown-item disabled">Tips of the Day...</div>
+        <div class="dropdown-sep"></div>
+        <div class="dropdown-item" onclick="showAbout()">About Windows Mail</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar" id="toolbar">
+    <button class="toolbar-btn" onclick="openCompose()" title="New Message">
+      <span class="tb-icon">&#128230;</span>
+      New
+    </button>
+    <button class="toolbar-btn" onclick="replySelected()" title="Reply">
+      <span class="tb-icon">&#9650;</span>
+      Reply
+    </button>
+    <button class="toolbar-btn" onclick="forwardSelected()" title="Forward">
+      <span class="tb-icon">&#9660;</span>
+      Forward
+    </button>
+    <div class="separator"></div>
+    <button class="toolbar-btn" onclick="deleteSelected()" title="Delete">
+      <span class="tb-icon">&#128465;</span>
+      Delete
+    </button>
+    <button class="toolbar-btn" onclick="undeleteSelected()" title="Undelete">
+      <span class="tb-icon">&#8630;</span>
+      Undelete
+    </button>
+    <div class="separator"></div>
+    <button class="toolbar-btn" onclick="archiveSelected()" title="Archive">
+      <span class="tb-icon">&#9733;</span>
+      Archive
+    </button>
+    <button class="toolbar-btn" onclick="moveToJunk()" title="Junk">
+      <span class="tb-icon">&#128308;</span>
+      Junk
+    </button>
+    <div class="separator"></div>
+    <button class="toolbar-btn" onclick="refreshMail()" title="Send/Receive">
+      <span class="tb-icon">&#8635;</span>
+      Send/Recv
+    </button>
+    <div class="separator"></div>
+    <button class="toolbar-btn" onclick="showAddressBook()" title="Address Book">
+      <span class="tb-icon">&#128196;</span>
+      Book
+    </button>
+  </div>
+
+  <!-- Body -->
+  <div class="body-area">
+
+    <!-- Folder Pane -->
+    <div class="folder-pane" id="folderPane">
+      <div class="folder-pane-header">Mailbox - Inbox</div>
+      <ul class="folder-tree" id="folderTree"></ul>
+    </div>
+
+    <!-- Resize Handle -->
+    <div class="resize-handle" id="resizeHandle"></div>
+
+    <!-- Content Pane -->
+    <div class="content-pane">
+
+      <!-- Email List -->
+      <div class="email-list-pane" id="emailListPane">
+        <div class="col-headers">
+          <div class="row-check" style="border-right:1px solid var(--win-dark);padding:2px 4px;">
+            <input type="checkbox" id="selectAllCheck" onchange="toggleSelectAll()" style="cursor:pointer;width:14px;height:14px;">
+          </div>
+          <div class="row-star" style="border-right:1px solid var(--win-dark);padding:2px 4px;font-size:13px;" onclick="toggleStarAll()">&#9733;</div>
+          <div class="col-header" style="flex:0 0 160px;border-right:1px solid var(--win-dark);">From <span class="arrow">&#9650;</span></div>
+          <div class="col-header" style="flex:1;border-right:1px solid var(--win-dark);">Subject <span class="arrow"></span></div>
+          <div class="col-header" style="flex:0 0 80px;">Date <span class="arrow">&#9660;</span></div>
+        </div>
+        <div class="email-list" id="emailList"></div>
+      </div>
+
+      <!-- Detail Pane -->
+      <div class="detail-pane" id="detailPane">
+        <div class="split-divider" id="splitDivider"></div>
+        <div class="detail-header" id="detailHeader"></div>
+        <div class="detail-body" id="detailBody"></div>
+        <div class="detail-reply">
+          <textarea id="replyText" placeholder="Type your reply..."></textarea>
+          <button class="win-btn" onclick="sendReply()">Send</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <div class="status-section" id="statusText">Ready</div>
+    <div class="status-section count" id="statusCount">0 items</div>
+    <div class="status-section border-right" id="statusFolder">Inbox</div>
+  </div>
+</div>
+
+<!-- ===== COMPOSE WINDOW ===== -->
+<div class="compose-window win-raised" id="composeWindow">
+  <div class="compose-title-bar" id="composeTitleBar">
+    <div class="title-bar-icon" style="width:16px;height:16px;margin-right:4px;background:#c0c0c0;border:1px solid #fff;display:flex;align-items:center;justify-content:center;font-size:11px;color:#000;">M</div>
+    <span class="title-bar-text" id="composeTitleText">Message</span>
+    <button onclick="closeCompose()" style="margin-left:4px;width:18px;height:16px;background:var(--win-bg);border-top:1px solid #fff;border-left:1px solid #fff;border-bottom:1px solid #000;border-right:1px solid #000;font-size:10px;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;line-height:1;">&times;</button>
+  </div>
+  <div class="menu-bar">
+    <div class="menu-item">File<div class="dropdown">
+      <div class="dropdown-item" onclick="sendCompose()">Send <span class="shortcut">Alt+S</span></div>
+      <div class="dropdown-item" onclick="saveDraft()">Save as Draft <span class="shortcut">Ctrl+S</span></div>
+      <div class="dropdown-sep"></div>
+      <div class="dropdown-item" onclick="closeCompose()">Close <span class="shortcut">Ctrl+W</span></div>
+    </div></div>
+    <div class="menu-item">Edit<div class="dropdown">
+      <div class="dropdown-item disabled">Cut</div>
+      <div class="dropdown-item disabled">Copy</div>
+      <div class="dropdown-item disabled">Paste</div>
+    </div></div>
+    <div class="menu-item">View<div class="dropdown">
+      <div class="dropdown-item disabled">Headers</div>
+      <div class="dropdown-item disabled">Format Text</div>
+    </div></div>
+    <div class="menu-item">Actions<div class="dropdown">
+      <div class="dropdown-item" onclick="sendCompose()">Send <span class="shortcut">Alt+S</span></div>
+      <div class="dropdown-item" onclick="saveDraft()">Save as Draft</div>
+    </div></div>
+    <div class="menu-item">Help<div class="dropdown">
+      <div class="dropdown-item disabled">Contents</div>
+      <div class="dropdown-item" onclick="showAbout()">About</div>
+    </div></div>
+  </div>
+  <div class="compose-body">
+    <div class="compose-field">
+      <label>To:</label>
+      <input type="text" id="composeTo" placeholder="">
+    </div>
+    <div class="compose-field">
+      <label>Cc:</label>
+      <input type="text" id="composeCc" placeholder="">
+    </div>
+    <div class="compose-field">
+      <label>Subject:</label>
+      <input type="text" id="composeSubject" placeholder="">
+    </div>
+    <textarea class="compose-textarea" id="composeBody" placeholder=""></textarea>
+  </div>
+  <div class="compose-footer">
+    <button class="win-btn" onclick="sendCompose()">&#128222; &nbsp;Send</button>
+    <button class="win-btn" onclick="saveDraft()">&#128196; &nbsp;Save Draft</button>
+    <button class="win-btn" onclick="closeCompose()">Cancel</button>
+  </div>
+</div>
+
+<!-- Context Menu -->
+<div class="context-menu" id="contextMenu">
+  <div class="context-item" onclick="openCompose()">New Message</div>
+  <div class="context-item" onclick="replySelected()">Reply</div>
+  <div class="context-item" onclick="forwardSelected()">Forward</div>
+  <div class="context-sep"></div>
+  <div class="context-item" onclick="markRead()">Mark as Read</div>
+  <div class="context-item" onclick="markUnread()">Mark as Unread</div>
+  <div class="context-sep"></div>
+  <div class="context-item" onclick="deleteSelected()">Delete</div>
+  <div class="context-item" onclick="archiveSelected()">Archive</div>
+  <div class="context-item" onclick="moveToJunk()">Mark as Junk</div>
+</div>
+
+<!-- Progress Overlay -->
+<div class="progress-overlay" id="progressOverlay">
+  <div class="progress-box">
+    <div class="progress-label">
+      <span>&#9881;</span>
+      <span id="progressText">Sending message...</span>
+    </div>
+    <div class="progress-bar-outer">
+      <div class="progress-bar-inner" id="progressBar"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Message Box -->
+<div class="msg-overlay" id="msgOverlay">
+  <div class="msg-box">
+    <div class="msg-title-bar">
+      <span id="msgTitle">Windows Mail</span>
+      <button onclick="closeMsg()">&times;</button>
+    </div>
+    <div class="msg-body">
+      <div class="msg-icon" id="msgIcon">&#9888;</div>
+      <div class="msg-text" id="msgText"></div>
+    </div>
+    <div class="msg-buttons" id="msgButtons"></div>
+  </div>
+</div>
+
+<!-- Notification Area -->
+<div class="notification-area" id="notificationArea"></div>
+
+<script>
+// ==================== DATA ====================
+const folders = [
+  { id: 'inbox', name: 'Inbox', icon: '&#9993;', group: 'Mail' },
+  { id: 'sent', name: 'Sent Mail', icon: '&#9992;', group: 'Mail' },
+  { id: 'drafts', name: 'Drafts', icon: '&#9997;', group: 'Mail' },
+  { id: 'deleted', name: 'Deleted Mail', icon: '&#128465;', group: 'Mail' },
+  { id: 'junk', name: 'Junk Mail', icon: '&#128308;', group: 'Mail' },
+  { id: 'archive', name: 'Archive', icon: '&#128230;', group: 'Mail' },
+];
+
+let selectedFolder = 'inbox';
+let selectedEmailId = null;
+let composeMode = 'new';
+let replyToId = null;
+
+function getColor(name) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+  const hue = Math.abs(h) % 360;
+  return `hsl(${hue}, 50%, 40%)`;
+}
+
+function getInitials(name) {
+  return name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+}
+
+let emails = [
+  // Recent question emails (unread, prompting reply)
+  {
+    id: 1, folder: 'inbox',
+    from: 'Jordan Blake', email: 'j.blake@university.edu',
+    subject: 'Floor Meeting This Wednesday - Please Confirm Attendance',
+    body: `<p>Hey everyone,</p>
+<p>Just a reminder that we have our weekly floor meeting this <strong>Wednesday, October 29th at 7:00 PM</strong> in the North Hall common room (3rd floor).</p>
+<p><strong>Agenda:</strong></p>
+<ul>
+<li>Upcoming holiday break housing sign-ups (Nov 3 - 10)</li>
+<li>Guest policy reminders before midterms</li>
+<li>Feedback on the new gym hours</li>
+<li>Open discussion - any concerns or suggestions</li>
+</ul>
+<p><strong>Important:</strong> If you want to sign up for holiday break housing (staying on campus Nov 24 - Dec 31), you need to reply to this email with your names and room numbers by <strong>Monday, November 3rd</strong>. Spots are limited to the first 30 people.</p>
+<p>Please let me know if you can make it. If you have any issues or conflicts, just shoot me a reply and we'll figure something out.</p>
+<p>See you there!<br>
+Jordan<br>
+Resident Advisor, North Hall</p>`,
+    date: '10/28/2026', time: '10:15 AM', unread: true, starred: true, hasAttachment: false
+  },
+  {
+    id: 2, folder: 'inbox',
+    from: 'Dr. Marcus Chen', email: 'm.chen@university.edu',
+    subject: 'RE: Research Assistant Position - Can You Start Next Week?',
+    body: `<p>Hi,</p>
+<p>Thanks for your interest in the research assistant position in my Computational Biology lab. I reviewed your application and I'm impressed with your background.</p>
+<p>I have a follow-up question: <strong>Are you available to start next week (November 2nd)?</strong> We have a tight timeline for a grant proposal due November 20th, and I'm looking for someone who can begin data collection immediately.</p>
+<p>The position is 10-15 hours per week, paid at the campus hourly rate. You would be assisting with:</p>
+<ul>
+<li>Genomic data processing and analysis</li>
+<li>Literature review for the grant proposal</li>
+<li>Basic statistical modeling using R</li>
+</ul>
+<p>Please let me know your availability by tomorrow so I can make arrangements. If you're interested, I'd also like to schedule a brief meeting this week to discuss the project details.</p>
+<p>Looking forward to hearing from you.</p>
+<p>Best,<br>
+Dr. Marcus Chen<br>
+Associate Professor, Department of Biology<br>
+Campus Science Building, Room 314</p>`,
+    date: '10/28/2026', time: '9:42 AM', unread: true, starred: true, hasAttachment: false
+  },
+  // Welcome email
+  {
+    id: 3, folder: 'inbox',
+    from: 'University Welcome Team', email: 'welcome@university.edu',
+    subject: 'Welcome to University.edu - Your Student Portal is Ready',
+    body: `<p>Dear Freshman,</p>
+<p>Welcome to the university family! We are thrilled to have you join our community as part of the Class of 2030.</p>
+<p>Your student account has been created and is now active. Here are your login details:</p>
+<ul>
+<li><strong>Student ID:</strong> 2026-004821</li>
+<li><strong>Portal URL:</strong> portal.university.edu</li>
+<li><strong>Email:</strong> you@university.edu</li>
+</ul>
+<p><strong>Important First-Week Checklist:</strong></p>
+<ol>
+<li>Complete your orientation modules (due by October 31)</li>
+<li>Attend the Freshman Convocation on November 3rd at 6:00 PM in the Main Auditorium</li>
+<li>Visit the Library to set up your library card and borrowing privileges</li>
+<li>Meet with your academic advisor to finalize your course schedule</li>
+<li>Activate your campus ID card at the Student Services Office</li>
+</ol>
+<p>We have prepared a comprehensive Freshman Guide with information about campus resources, housing, dining plans, health services, and student organizations.</p>
+<p>If you have any questions, please don't hesitate to reach out. We are here to support you every step of the way.</p>
+<p>Welcome aboard!<br>
+The Office of Student Affairs</p>`,
+    date: '09/01/2026', time: '8:00 AM', unread: false, starred: true, hasAttachment: true
+  },
+  // Academic emails (freshman identity)
+  {
+    id: 4, folder: 'inbox',
+    from: 'Registrar Office', email: 'registrar@university.edu',
+    subject: 'Course Schedule Confirmation - Fall 2026 Semester',
+    body: `<p>Dear Student,</p>
+<p>Your course schedule for the Fall 2026 semester has been confirmed. Please review the following:</p>
+<p><strong>ENGR 1010 - Introduction to Engineering</strong><br>
+Monday/Wednesday/Friday 9:00 - 9:50 AM | Room ENG-101</p>
+<p><strong>CS 1101 - Computer Science I</strong><br>
+Tuesday/Thursday 10:00 - 11:15 AM | Room CSE-205</p>
+<p><strong>MATH 1301 - Calculus I</strong><br>
+Monday/Wednesday 2:00 - 3:15 PM | Room MATH-310</p>
+<p><strong>ENG 1001 - Freshman Composition</strong><br>
+Tuesday/Thursday 1:30 - 2:45 PM | Room HUM-118</p>
+<p><strong>BIO 1101 - General Biology I</strong><br>
+Monday/Wednesday/Friday 11:00 - 11:50 AM | Room SCI-102</p>
+<p><strong>Lab Section - BIO 1101L</strong><br>
+Thursday 3:00 - 5:00 PM | Lab Building L-204</p>
+<p>Please note: The add/drop deadline for this semester is <strong>October 7, 2026</strong>. After this date, changes to your schedule will require departmental approval.</p>
+<p>Registrar's Office</p>`,
+    date: '09/02/2026', time: '7:30 AM', unread: false, starred: false, hasAttachment: true
+  },
+  {
+    id: 5, folder: 'inbox',
+    from: 'Student Financial Services', email: 'finances@university.edu',
+    subject: 'Tuition Payment Reminder - Fall 2026 (Due October 15)',
+    body: `<p>Dear Student,</p>
+<p>This is a reminder that your tuition payment for the Fall 2026 semester is due by <strong>October 15, 2026</strong>.</p>
+<p><strong>Payment Summary:</strong></p>
+<ul>
+<li>Tuition (15 credit hours): $6,750.00</li>
+<li>Technology Fee: $250.00</li>
+<li>Student Activity Fee: $180.00</li>
+<li>Health Services Fee: $320.00</li>
+<li><strong>Total Due:</strong> <strong>$7,500.00</strong></li>
+</ul>
+<p><strong>Financial Aid Applied:</strong> $5,200.00<br>
+<strong>Balance Remaining:</strong> <strong>$2,300.00</strong></p>
+<p>You can make your payment through the student portal or at the Bursar's Office in the Student Services Building. If you are planning to use a payment plan, please enroll by October 10th.</p>
+<p>Failure to pay by the deadline may result in registration holds and loss of course enrollment.</p>
+<p>Student Financial Services</p>`,
+    date: '10/01/2026', time: '11:00 AM', unread: false, starred: false, hasAttachment: false
+  },
+  {
+    id: 6, folder: 'inbox',
+    from: 'Campus Housing', email: 'housing@university.edu',
+    subject: 'Housing Confirmation - North Hall, Room 412',
+    body: `<p>Dear Student,</p>
+<p>Your housing assignment for the 2026-2027 academic year has been confirmed:</p>
+<p><strong>Building:</strong> North Hall<br>
+<strong>Room:</strong> 412 (Double Occupancy)<br>
+<strong>Roommate:</strong> Alex Thompson<br>
+<strong>Move-in Date:</strong> August 20, 2026<br>
+<strong>Check-out Date:</strong> May 15, 2027</p>
+<p>Please review the housing contract and sign it online by October 31st. If you have any special accommodation requests or dietary needs for the dining plan, please submit them through the portal.</p>
+<p>North Hall Amenities:<br>
+&#9679; On-site laundry facilities (2nd floor)<br>
+&#9679; Study lounge (1st floor)<br>
+&#9679; Gym access (adjacent building)<br>
+&#9679; 24/7 security desk</p>
+<p>Campus Housing Services</p>`,
+    date: '07/15/2026', time: '3:00 PM', unread: false, starred: false, hasAttachment: true
+  },
+  {
+    id: 7, folder: 'inbox',
+    from: 'Library Services', email: 'library@university.edu',
+    subject: 'Your Library Card is Active - Borrowing Limits & Resources',
+    body: `<p>Welcome to the University Library!</p>
+<p>Your library card has been activated. You now have access to the following resources:</p>
+<p><strong>Borrowing Limits:</strong><br>
+&#9679; Books: 20 items, 21-day loan period<br>
+&#9679; DVDs: 5 items, 7-day loan period<br>
+&#9679; Laptops: 1 item, 3-hour loan period</p>
+<p><strong>Digital Resources Available:</strong><br>
+&#9679; JSTOR Academic Database<br>
+&#9679; IEEE Xplore<br>
+&#9679; PubMed<br>
+&#9679; Oxford English Dictionary Online<br>
+&#9679; Kanopy (streaming films)</p>
+<p>The library is open Sunday-Thursday 7AM - 1AM, Friday-Saturday 10AM - 12AM.</p>
+<p>Library Services</p>`,
+    date: '09/03/2026', time: '9:00 AM', unread: false, starred: false, hasAttachment: false
+  },
+  {
+    id: 8, folder: 'inbox',
+    from: 'Student Life Office', email: 'studentlife@university.edu',
+    subject: 'Club & Organization Fair - This Thursday, October 29th',
+    body: `<p>Hello Freshmen!</p>
+<p>The annual Club & Organization Fair is happening <strong>this Thursday, October 29th from 11:00 AM to 2:00 PM</strong> in the Student Union Courtyard.</p>
+<p>Over 80 student organizations will be present, including:</p>
+<ul>
+<li>Engineering Society</li>
+<li>Computer Science Club</li>
+<li>Debate Team</li>
+<li>Photography Club</li>
+<li>Volunteer Corps</li>
+<li>Student Government Association</li>
+<li>Chess Club</li>
+<li>Hiking & Outdoor Adventure Club</li>
+</ul>
+<p>This is a great opportunity to meet other students and find communities that match your interests. Many clubs offer free workshops and events throughout the semester.</p>
+<p>See you there!<br>
+Student Life Office</p>`,
+    date: '10/25/2026', time: '2:00 PM', unread: false, starred: false, hasAttachment: false
+  },
+  {
+    id: 9, folder: 'inbox',
+    from: 'Career Services', email: 'careers@university.edu',
+    subject: 'Fall Career Fair - November 10th (Register Now)',
+    body: `<p>Dear Students,</p>
+<p>The Fall 2026 Career Fair is approaching on <strong>Monday, November 10th</strong> from 10:00 AM to 4:00 PM in the Campus Convention Center.</p>
+<p><strong>Participating Employers Include:</strong> Google, Microsoft, Amazon, Deloitte, Goldman Sachs, Boeing, Lockheed Martin, and 120+ more companies.</p>
+<p><strong>Why Attend?</strong><br>
+&#9679; Meet recruiters from top companies<br>
+&#9679; Submit your resume on the spot<br>
+&#9679; Learn about internship and full-time opportunities<br>
+&#9679; Get feedback on your resume at our free workshops</p>
+<p><strong>Free Resume Workshops:</strong><br>
+&#9679; November 4th at 3:00 PM | Room HUM-201<br>
+&#9679; November 7th at 12:00 PM | Room HUM-201</p>
+<p>Register at careers.university.edu. Spaces are limited.</p>
+<p>Career Services</p>`,
+    date: '10/20/2026', time: '10:00 AM', unread: false, starred: true, hasAttachment: false
+  },
+  {
+    id: 10, folder: 'inbox',
+    from: 'Campus IT Help Desk', email: 'helpdesk@university.edu',
+    subject: 'Campus WiFi Network Update - New Secure Network Launching',
+    body: `<p>All Students and Faculty,</p>
+<p>We are launching a new secure campus WiFi network called <strong>UniSecure</strong> starting November 1st.</p>
+<p><strong>What's changing:</strong><br>
+&#9679; Old network "UniGuest" will be discontinued on November 15th<br>
+&#9679; New network "UniSecure" uses WPA3 encryption<br>
+&#9679; You will log in with your student credentials</p>
+<p><strong>Setup Instructions:</strong><br>
+1. Connect to "UniSecure" on your device<br>
+2. Enter your student ID and password<br>
+3. Accept the terms of use</p>
+<p>If you need help setting up your devices, visit the IT Help Desk in the Student Services Building, Room 105.</p>
+<p>Campus IT Services</p>`,
+    date: '10/22/2026', time: '1:00 PM', unread: false, starred: false, hasAttachment: false
+  },
+  // Sent
+  {
+    id: 11, folder: 'sent',
+    from: 'You', email: 'you@company.com',
+    subject: 'Re: Q4 Budget Proposal - Please Review',
+    body: `<p>Sarah,</p>
+<p>Thank you for sharing the proposal. I have reviewed the numbers and have a few comments:</p>
+<ul>
+<li>The marketing spend appears reasonable for the planned campaigns</li>
+<li>Would it be possible to increase R&D allocation by an additional $50K? We have a new tooling initiative that requires funding</li>
+<li>The hiring plan aligns well with our growth targets</li>
+</ul>
+<p>I recommend we present this to the board with the noted R&D adjustment.</p>
+<p>Best regards,</p>`,
+    date: '10/28/2026', time: '9:30 AM', unread: false, starred: false, hasAttachment: false
+  },
+  {
+    id: 12, folder: 'sent',
+    from: 'You', email: 'you@company.com',
+    subject: 'Meeting Room Booking - Conference Room A, Nov 2',
+    body: `<p>Dear Facilities Team,</p>
+<p>I would like to request the booking of Conference Room A for Monday, November 2nd from 2:00 PM to 4:00 PM for a team meeting.</p>
+<p>Expected attendance: 12 people<br>
+Equipment required: projector, whiteboard, and video conferencing setup</p>
+<p>Thank you for your assistance.</p>
+<p>Best regards,</p>`,
+    date: '10/27/2026', time: '5:00 PM', unread: false, starred: false, hasAttachment: false
+  },
+  // Drafts
+  {
+    id: 13, folder: 'drafts',
+    from: 'You', email: 'you@university.edu',
+    subject: 'Request for Course Drop - MATH 1301',
+    body: `<p>Dear Registrar,</p>
+<p>I am writing to formally request a drop of MATH 1301 (Calculus I) for the Fall 2026 semester due to scheduling conflicts with my other required courses.</p>
+<p>I understand the add/drop deadline has passed, so I am requesting an exception. I plan to retake this course in the Spring 2027 semester.</p>
+<p>Student ID: 2026-004821</p>
+<p>Thank you for your consideration.</p>`,
+    date: '10/26/2026', time: 'Draft', unread: false, starred: false, hasAttachment: false
+  },
+  {
+    id: 14, folder: 'drafts',
+    from: 'You', email: 'you@university.edu',
+    subject: 'Application for Research Assistant Position',
+    body: `<p>Dear Dr. Chen,</p>
+<p>I am writing to express my strong interest in the research assistant position in your Computational Biology lab. As a freshman majoring in Computer Science with a minor in Biology, I believe my background in programming and data analysis would be a valuable contribution to your team.</p>
+<p>I have experience with Python, R, and basic statistical modeling. I am eager to learn and contribute to meaningful research.</p>
+<p>Thank you for considering my application.</p>`,
+    date: '10/20/2026', time: 'Draft', unread: false, starred: false, hasAttachment: true
+  },
+  // Deleted
+  {
+    id: 15, folder: 'deleted',
+    from: 'Dining Services', email: 'dining@university.edu',
+    subject: 'New Dining Plan Options for Spring 2027',
+    body: `<p>Dear Students,</p>
+<p>We are excited to announce new dining plan options for the Spring 2027 semester:</p>
+<ul>
+<li>Plan A: 14 meals/week + flex dollars</li>
+<li>Plan B: 19 meals/week + flex dollars</li>
+<li>Plan C: Unlimited meals at select locations</li>
+</ul>
+<p>Sign up at dining.university.edu. Early bird discount available through November 30th.</p>`,
+    date: '10/18/2026', time: '11:00 AM', unread: false, starred: false, hasAttachment: false
+  },
+  // Junk
+  {
+    id: 16, folder: 'junk',
+    from: 'deals@super-saver.biz',
+    subject: 'YOU HAVE WON $1,000,000!!!',
+    body: `<p>CONGRATULATIONS!!!</p>
+<p>You have been selected as the winner of our annual $1,000,000 giveaway!!!</p>
+<p>Click here to claim your prize!!!</p>
+<p>This is NOT a scam!!!</p>`,
+    date: '10/15/2026', time: '3:00 AM', unread: false, starred: false, hasAttachment: false
+  },
+];
+
+// ==================== RENDER ====================
+function renderFolders() {
+  const tree = document.getElementById('folderTree');
+  let html = '';
+  let currentGroup = '';
+
+  folders.forEach(f => {
+    if (f.group !== currentGroup) {
+      html += `<li class="folder-group-label">${f.group}</li>`;
+      currentGroup = f.group;
+    }
+    const count = getFolderCount(f.id);
+    html += `<li class="folder-item ${selectedFolder === f.id ? 'active' : ''}" onclick="switchFolder('${f.id}', this)">
+      <span class="folder-icon">${f.icon}</span>
+      <span>${f.name}</span>
+      ${count > 0 ? `<span class="folder-count">${count}</span>` : ''}
+    </li>`;
+  });
+
+  tree.innerHTML = html;
+}
+
+function getFolderCount(folderId) {
+  if (folderId === 'inbox') return emails.filter(e => e.folder === 'inbox').length;
+  if (folderId === 'sent') return emails.filter(e => e.folder === 'sent').length;
+  if (folderId === 'drafts') return emails.filter(e => e.folder === 'drafts').length;
+  if (folderId === 'deleted') return emails.filter(e => e.folder === 'deleted').length;
+  if (folderId === 'junk') return emails.filter(e => e.folder === 'junk').length;
+  if (folderId === 'archive') return emails.filter(e => e.folder === 'archive').length;
+  return 0;
+}
+
+function renderEmailList() {
+  const list = document.getElementById('emailList');
+  const filtered = emails.filter(e => e.folder === selectedFolder);
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">&#9993;</div>
+      <div>No messages in this folder.</div>
+    </div>`;
+    document.getElementById('statusCount').textContent = '0 items';
+    return;
+  }
+
+  list.innerHTML = filtered.map(email => {
+    const initials = getInitials(email.from);
+    const color = getColor(email.from);
+    return `<div class="email-row ${email.unread ? 'unread' : ''} ${selectedEmailId === email.id ? 'selected' : ''}"
+                 onclick="selectEmail(${email.id})" ondblclick="openEmail(${email.id})"
+                 oncontextmenu="showContext(event, ${email.id})">
+      <div class="row-check">
+        <input type="checkbox" onclick="event.stopPropagation()" data-id="${email.id}" class="email-check">
+      </div>
+      <div class="row-star ${email.starred ? 'starred' : ''}" onclick="event.stopPropagation(); toggleStar(${email.id})">
+        ${email.starred ? '&#9733;' : ''}
+      </div>
+      <div class="row-from">${email.from}</div>
+      <div class="row-subject">${email.subject}</div>
+      <div class="row-date">${email.date}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('statusCount').textContent = `${filtered.length} item${filtered.length !== 1 ? 's' : ''}`;
+}
+
+function renderDetail(email) {
+  if (!email) {
+    document.getElementById('detailHeader').innerHTML = '';
+    document.getElementById('detailBody').innerHTML = '';
+    return;
+  }
+
+  const initials = getInitials(email.from);
+  const color = getColor(email.from);
+  const name = email.folder === 'sent' ? 'You' : email.from;
+
+  document.getElementById('detailHeader').innerHTML = `
+    <div class="detail-subject">${email.subject}</div>
+    <div class="detail-meta">
+      <div><span class="label">From:</span> ${name} &lt;${email.email}&gt;</div>
+      <div><span class="label">To:</span> you@company.com</div>
+      ${email.folder !== 'sent' ? `<div><span class="label">Date:</span> ${email.date} ${email.time}</div>` : ''}
+      ${email.folder === 'sent' ? `<div><span class="label">Sent:</span> ${email.date} ${email.time}</div>` : ''}
+      <div><span class="label">Subject:</span> ${email.subject}</div>
+    </div>`;
+
+  document.getElementById('detailBody').innerHTML = email.body;
+}
+
+// ==================== ACTIONS ====================
+function switchFolder(folderId, el) {
+  selectedFolder = folderId;
+  selectedEmailId = null;
+
+  // Update folder active state
+  document.querySelectorAll('.folder-item').forEach(f => f.classList.remove('active'));
+  if (el) el.classList.add('active');
+  else {
+    document.querySelectorAll('.folder-item').forEach(f => {
+      if (f.textContent.trim().includes(getFolderName(folderId))) f.classList.add('active');
+    });
+  }
+
+  // Update title bar
+  document.querySelector('.title-bar-text').textContent = `Windows Mail - [${getFolderName(folderId)}]`;
+  document.querySelector('.folder-pane-header').textContent = `Mailbox - ${getFolderName(folderId)}`;
+  document.getElementById('statusFolder').textContent = getFolderName(folderId);
+
+  // Reset detail
+  document.getElementById('detailPane').classList.remove('visible');
+  document.getElementById('replyText').value = '';
+
+  renderEmailList();
+}
+
+function getFolderName(id) {
+  const f = folders.find(f => f.id === id);
+  return f ? f.name : id;
+}
+
+function selectEmail(id) {
+  selectedEmailId = id;
+  const email = emails.find(e => e.id === id);
+  if (!email) return;
+
+  email.unread = false;
+
+  // Show detail pane
+  document.getElementById('detailPane').classList.add('visible');
+  renderDetail(email);
+  renderEmailList();
+}
+
+function openEmail(id) {
+  selectEmail(id);
+}
+
+function toggleStar(id) {
+  const email = emails.find(e => e.id === id);
+  if (!email) return;
+  email.starred = !email.starred;
+  renderEmailList();
+  if (selectedEmailId === id) renderDetail(email);
+}
+
+function toggleStarAll() {
+  const folderEmails = emails.filter(e => e.folder === selectedFolder);
+  const allStarred = folderEmails.every(e => e.starred);
+  folderEmails.forEach(e => e.starred = !allStarred);
+  renderEmailList();
+}
+
+function toggleSelectAll() {
+  const checks = document.querySelectorAll('.email-check');
+  const allChecked = Array.from(checks).every(c => c.checked);
+  checks.forEach(c => c.checked = !allChecked);
+}
+
+function getSelectedEmails() {
+  const checks = document.querySelectorAll('.email-check:checked');
+  return Array.from(checks).map(c => parseInt(c.dataset.id));
+}
+
+function deleteSelected() {
+  const ids = getSelectedEmails().length > 0 ? getSelectedEmails() : (selectedEmailId ? [selectedEmailId] : []);
+  if (ids.length === 0) {
+    showMsg('Windows Mail', 'No messages selected.', '\u2139', [{ text: 'OK' }]);
+    return;
+  }
+  ids.forEach(id => {
+    const idx = emails.findIndex(e => e.id === id);
+    if (idx !== -1) {
+      emails[idx].folder = 'deleted';
+    }
+  });
+  if (ids.includes(selectedEmailId)) {
+    selectedEmailId = null;
+    document.getElementById('detailPane').classList.remove('visible');
+  }
+  renderEmailList();
+  renderFolders();
+  setStatus(`${ids.length} message(s) deleted.`);
+  showNotification(`\u2713 ${ids.length} message(s) moved to Deleted Mail`);
+}
+
+function deleteCurrentEmail() {
+  if (selectedEmailId) deleteSelected();
+}
+
+function archiveSelected() {
+  const ids = getSelectedEmails().length > 0 ? getSelectedEmails() : (selectedEmailId ? [selectedEmailId] : []);
+  if (ids.length === 0) return;
+  ids.forEach(id => {
+    const email = emails.find(e => e.id === id);
+    if (email) email.folder = 'archive';
+  });
+  if (ids.includes(selectedEmailId)) {
+    selectedEmailId = null;
+    document.getElementById('detailPane').classList.remove('visible');
+  }
+  renderEmailList();
+  renderFolders();
+  setStatus(`${ids.length} message(s) archived.`);
+  showNotification(`\u2713 ${ids.length} message(s) archived`);
+}
+
+function moveToJunk() {
+  const ids = getSelectedEmails().length > 0 ? getSelectedEmails() : (selectedEmailId ? [selectedEmailId] : []);
+  if (ids.length === 0) return;
+  ids.forEach(id => {
+    const email = emails.find(e => e.id === id);
+    if (email) email.folder = 'junk';
+  });
+  if (ids.includes(selectedEmailId)) {
+    selectedEmailId = null;
+    document.getElementById('detailPane').classList.remove('visible');
+  }
+  renderEmailList();
+  renderFolders();
+  setStatus(`${ids.length} message(s) moved to Junk.`);
+  showNotification(`\u2713 ${ids.length} message(s) marked as junk`);
+}
+
+function undeleteSelected() {
+  const ids = getSelectedEmails().length > 0 ? getSelectedEmails() : (selectedEmailId ? [selectedEmailId] : []);
+  if (ids.length === 0) return;
+  const currentFolder = emails.find(e => e.id === selectedEmailId)?.folder || selectedFolder;
+  if (currentFolder !== 'deleted') {
+    showMessageBox('Undelete', 'Undelete is only available from Deleted Mail folder.', 'info');
+    return;
+  }
+  ids.forEach(id => {
+    const email = emails.find(e => e.id === id);
+    if (email) email.folder = 'inbox';
+  });
+  if (ids.includes(selectedEmailId)) {
+    selectedEmailId = null;
+    document.getElementById('detailPane').classList.remove('visible');
+  }
+  renderEmailList();
+  renderFolders();
+  switchFolder('inbox');
+  setStatus(`${ids.length} message(s) undeleted.`);
+  showNotification(`\u2713 ${ids.length} message(s) undeleted`);
+}
+
+function markRead() {
+  const ids = getSelectedEmails().length > 0 ? getSelectedEmails() : (selectedEmailId ? [selectedEmailId] : []);
+  ids.forEach(id => {
+    const email = emails.find(e => e.id === id);
+    if (email) email.unread = false;
+  });
+  renderEmailList();
+  if (selectedEmailId) renderDetail(emails.find(e => e.id === selectedEmailId));
+}
+
+function markUnread() {
+  const ids = getSelectedEmails().length > 0 ? getSelectedEmails() : (selectedEmailId ? [selectedEmailId] : []);
+  ids.forEach(id => {
+    const email = emails.find(e => e.id === id);
+    if (email) email.unread = true;
+  });
+  renderEmailList();
+}
+
+function markAllRead() {
+  emails.filter(e => e.folder === selectedFolder).forEach(e => e.unread = false);
+  renderEmailList();
+  setStatus('All messages marked as read.');
+}
+
+function purgeDeleted() {
+  const count = emails.filter(e => e.folder === 'deleted').length;
+  if (count === 0) {
+    showMsg('Windows Mail', 'The Deleted Mail folder is already empty.', '\u2139', [{ text: 'OK' }]);
+    return;
+  }
+  showMsg('Windows Mail', `Are you sure you want to permanently delete ${count} message(s) from Deleted Mail?`, '\u26A0', [
+    { text: 'Yes', action: () => {
+      emails = emails.filter(e => e.folder !== 'deleted');
+      renderEmailList();
+      renderFolders();
+      closeMsg();
+      setStatus(`${count} message(s) permanently deleted.`);
+      showNotification(`\u2713 ${count} message(s) permanently deleted`);
+    }},
+    { text: 'No', action: closeMsg }
+  ]);
+}
+
+function replySelected() {
+  const ids = getSelectedEmails();
+  const id = ids.length > 0 ? ids[0] : selectedEmailId;
+  if (!id) {
+    showMsg('Windows Mail', 'No message selected to reply to.', '\u2139', [{ text: 'OK' }]);
+    return;
+  }
+  const email = emails.find(e => e.id === id);
+  if (!email) return;
+  replyToId = id;
+  composeMode = 'reply';
+  openCompose('reply', email);
+}
+
+function forwardSelected() {
+  const ids = getSelectedEmails();
+  const id = ids.length > 0 ? ids[0] : selectedEmailId;
+  if (!id) {
+    showMsg('Windows Mail', 'No message selected to forward.', '\u2139', [{ text: 'OK' }]);
+    return;
+  }
+  const email = emails.find(e => e.id === id);
+  if (!email) return;
+  composeMode = 'forward';
+  openCompose('forward', email);
+}
+
+function refreshMail() {
+  showProgress('Checking for new messages...', 2000, () => {
+    showProgress('Downloading messages...', 1500, () => {
+      closeProgress();
+      showMsg('Windows Mail', 'The operation completed successfully.\n\n0 new messages.\n0 messages already downloaded.', '\u2713', [{ text: 'OK' }]);
+      setStatus('Send/Receive completed.');
+    });
+  });
+}
+
+// ==================== COMPOSE ====================
+function openCompose(mode, email) {
+  const win = document.getElementById('composeWindow');
+  win.classList.add('open');
+
+  // Center window
+  const ww = window.innerWidth, wh = window.innerHeight;
+  win.style.left = Math.max(50, (ww - 560) / 2) + 'px';
+  win.style.top = Math.max(30, (wh - 420) / 2) + 'px';
+
+  if (mode === 'reply' && email) {
+    document.getElementById('composeTitleText').textContent = 'Re: ' + email.subject;
+    document.getElementById('composeTo').value = email.email;
+    document.getElementById('composeSubject').value = 'Re: ' + email.subject;
+    document.getElementById('composeBody').value = '';
+    composeMode = 'reply';
+    replyToId = email.id;
+  } else if (mode === 'forward' && email) {
+    document.getElementById('composeTitleText').textContent = 'Fwd: ' + email.subject;
+    document.getElementById('composeTo').value = '';
+    document.getElementById('composeSubject').value = 'Fwd: ' + email.subject;
+    document.getElementById('composeBody').value = '';
+    composeMode = 'forward';
+    replyToId = email.id;
+  } else {
+    document.getElementById('composeTitleText').textContent = 'Message';
+    document.getElementById('composeTo').value = '';
+    document.getElementById('composeSubject').value = '';
+    document.getElementById('composeBody').value = '';
+    composeMode = 'new';
+    replyToId = null;
+  }
+
+  document.getElementById('composeTo').focus();
+}
+
+function closeCompose() {
+  document.getElementById('composeWindow').classList.remove('open');
+}
+
+// ==================== AI EMAIL POLISHER ====================
+function polishEmail(text) {
+  // Strip HTML tags for processing
+  const plain = text.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+
+  // Normalize whitespace
+  const sentences = plain.split(/(?<=[.!?])\s+/).map(s => s.trim()).filter(Boolean);
+
+  // Polished opening/closing phrases
+  const openings = [
+    'I hope this message finds you well.',
+    'I trust you are doing well.',
+    'I hope this email finds you in good health.',
+    'I hope this message meets you well.',
+  ];
+  const closings = [
+    'Thank you for your time and consideration.',
+    'I appreciate your attention to this matter.',
+    'Thank you for your time and consideration in this matter.',
+    'I appreciate your time and assistance with this matter.',
+  ];
+
+  // Politeness / formality upgrades
+  const upgrades = [
+    { pattern: /\bi want\b/gi, replacement: 'I would like' },
+    { pattern: /\bi need\b/gi, replacement: 'I would appreciate it if you could' },
+    { pattern: /\bi don't\b/gi, replacement: 'I do not' },
+    { pattern: /\bi can't\b/gi, replacement: 'I am unable to' },
+    { pattern: /\bi'm\b/gi, replacement: 'I am' },
+    { pattern: /\bi'll\b/gi, replacement: 'I will' },
+    { pattern: /\bi've\b/gi, replacement: 'I have' },
+    { pattern: /\bi'd\b/gi, replacement: 'I would' },
+    { pattern: /\byou're\b/gi, replacement: 'you are' },
+    { pattern: /\byou'll\b/gi, replacement: 'you will' },
+    { pattern: /\byour welcome\b/gi, replacement: 'you are welcome' },
+    { pattern: /\bit's\b/gi, replacement: 'it is' },
+    { pattern: /\bthat's\b/gi, replacement: 'that is' },
+    { pattern: /\bwhat's\b/gi, replacement: 'what is' },
+    { pattern: /\bwho's\b/gi, replacement: 'who is' },
+    { pattern: /\bcan you\b/gi, replacement: 'could you please' },
+    { pattern: /\bplease send\b/gi, replacement: 'kindly forward' },
+    { pattern: /\bthanks\b/gi, replacement: 'thank you' },
+    { pattern: /\bthank you for letting me\b/gi, replacement: 'thank you for informing me' },
+    { pattern: /\blet me know\b/gi, replacement: 'please do not hesitate to let me know' },
+    { pattern: /\blet me\b/gi, replacement: 'allow me to' },
+    { pattern: /\bjust checking\b/gi, replacement: 'I am writing to follow up' },
+    { pattern: /\bjust wanted\b/gi, replacement: 'I am reaching out to' },
+    { pattern: /\bhey\b/gi, replacement: 'hello' },
+    { pattern: /\bhi\b/gi, replacement: 'hello' },
+    { pattern: /\bgonna\b/gi, replacement: 'going to' },
+    { pattern: /\bwanna\b/gi, replacement: 'want to' },
+    { pattern: /\bgotta\b/gi, replacement: 'have to' },
+    { pattern: /\bgonna\b/gi, replacement: 'going to' },
+    { pattern: /\bkinda\b/gi, replacement: 'somewhat' },
+    { pattern: /\bsort of\b/gi, replacement: 'to some extent' },
+    { pattern: /\ba lot\b/gi, replacement: 'significantly' },
+    { pattern: /\bvery good\b/gi, replacement: 'excellent' },
+    { pattern: /\bvery bad\b/gi, replacement: 'unsatisfactory' },
+    { pattern: /\bvery important\b/gi, replacement: 'of paramount importance' },
+    { pattern: /\bvery happy\b/gi, replacement: 'delighted' },
+    { pattern: /\bvery sad\b/gi, replacement: 'disappointed' },
+    { pattern: /\bget back\b/gi, replacement: 'respond' },
+    { pattern: /\bget\b/gi, replacement: 'receive' },
+    { pattern: /\buse\b/gi, replacement: 'utilize' },
+    { pattern: /\bbuy\b/gi, replacement: 'purchase' },
+    { pattern: /\bhelp\b/gi, replacement: 'assist' },
+    { pattern: /\bstart\b/gi, replacement: 'commence' },
+    { pattern: /\bend\b/gi, replacement: 'conclude' },
+    { pattern: /\bask\b/gi, replacement: 'inquire' },
+    { pattern: /\bneed\b/gi, replacement: 'require' },
+    { pattern: /\bgive\b/gi, replacement: 'provide' },
+    { pattern: /\bmake\b/gi, replacement: 'create' },
+    { pattern: /\btry\b/gi, replacement: 'attempt' },
+    { pattern: /\bshow\b/gi, replacement: 'demonstrate' },
+    { pattern: /\btell\b/gi, replacement: 'inform' },
+    { pattern: /\bfix\b/gi, replacement: 'resolve' },
+    { pattern: /\bchange\b/gi, replacement: 'modify' },
+    { pattern: /\bcheck\b/gi, replacement: 'review' },
+    { pattern: /\blook into\b/gi, replacement: 'investigate' },
+    { pattern: /\bbring up\b/gi, replacement: 'raise' },
+    { pattern: /\bpoint out\b/gi, replacement: 'highlight' },
+    { pattern: /\bcome up\b/gi, replacement: 'arise' },
+    { pattern: /\bput off\b/gi, replacement: 'postpone' },
+    { pattern: /\bfigure out\b/gi, replacement: 'determine' },
+    { pattern: /\bsort out\b/gi, replacement: 'resolve' },
+    { pattern: /\bdeal with\b/gi, replacement: 'address' },
+    { pattern: /\bcome up with\b/gi, replacement: 'develop' },
+    { pattern: /\bkeep track\b/gi, replacement: 'monitor' },
+    { pattern: /\bset up\b/gi, replacement: 'establish' },
+    { pattern: /\bthrow away\b/gi, replacement: 'discard' },
+    { pattern: /\bcome up against\b/gi, replacement: 'encounter' },
+    { pattern: /\bgo over\b/gi, replacement: 'review' },
+    { pattern: /\bcarry out\b/gi, replacement: 'execute' },
+    { pattern: /\bwork on\b/gi, replacement: 'collaborate on' },
+    { pattern: /\bmove forward\b/gi, replacement: 'proceed' },
+    { pattern: /\bkeep in mind\b/gi, replacement: 'bear in mind' },
+    { pattern: /\bget together\b/gi, replacement: 'meet' },
+    { pattern: /\blook forward\b/gi, replacement: 'anticipate' },
+    { pattern: /\bbest regards\b/gi, replacement: 'Sincerely' },
+    { pattern: /\bcheers\b/gi, replacement: 'Best regards' },
+    { pattern: /\bspeaking of which\b/gi, replacement: 'incidentally' },
+    { pattern: /\bon the other hand\b/gi, replacement: 'conversely' },
+    { pattern: /\bin other words\b/gi, replacement: 'to reiterate' },
+    { pattern: /\bas well as\b/gi, replacement: 'in addition to' },
+    { pattern: /\bnext to\b/gi, replacement: 'adjacent to' },
+    { pattern: /\binstead of\b/gi, replacement: 'in lieu of' },
+    { pattern: /\bdue to\b/gi, replacement: 'as a result of' },
+    { pattern: /\bas a result\b/gi, replacement: 'consequently' },
+    { pattern: /\bhowever\b/gi, replacement: 'nevertheless' },
+    { pattern: /\bfurthermore\b/gi, replacement: 'additionally' },
+    { pattern: /\bmoreover\b/gi, replacement: 'additionally' },
+    { pattern: /\btherefore\b/gi, replacement: 'accordingly' },
+    { pattern: /\bsimilarly\b/gi, replacement: 'in a similar vein' },
+    { pattern: /\bso\b/gi, replacement: 'therefore' },
+    { pattern: /\bbut\b/gi, replacement: 'however' },
+    { pattern: /\balso\b/gi, replacement: 'additionally' },
+    { pattern: /\breally\b/gi, replacement: 'considerably' },
+    { pattern: /\bsuper\b/gi, replacement: 'exceptionally' },
+    { pattern: /\bcrazy\b/gi, replacement: 'extraordinary' },
+    { pattern: /\bawesome\b/gi, replacement: 'remarkable' },
+    { pattern: /\bpretty good\b/gi, replacement: 'quite satisfactory' },
+    { pattern: /\bnot bad\b/gi, replacement: 'acceptable' },
+    { pattern: /\bkind of\b/gi, replacement: 'somewhat' },
+    { pattern: /\bkinda\b/gi, replacement: 'to some degree' },
+    { pattern: /\bsure\b/gi, replacement: 'certainly' },
+    { pattern: /\bof course\b/gi, replacement: 'undoubtedly' },
+    { pattern: /\byeah\b/gi, replacement: 'affirmative' },
+    { pattern: /\bno way\b/gi, replacement: 'under no circumstances' },
+    { pattern: /\bno problem\b/gi, replacement: 'you are most welcome' },
+    { pattern: /\bsorry\b/gi, replacement: 'I apologize' },
+    { pattern: /\bexcuse me\b/gi, replacement: 'pardon me' },
+    { pattern: /\bwait\b/gi, replacement: 'please hold' },
+    { pattern: /\bquick\b/gi, replacement: 'prompt' },
+    { pattern: /\bsimple\b/gi, replacement: 'straightforward' },
+    { pattern: /\beasy\b/gi, replacement: 'effortless' },
+    { pattern: /\bfine\b/gi, replacement: 'satisfactory' },
+    { pattern: /\bgreat\b/gi, replacement: 'excellent' },
+    { pattern: /\bokay\b/gi, replacement: 'acceptable' },
+    { pattern: /\bok\b/gi, replacement: 'acknowledged' },
+    { pattern: /\bcool\b/gi, replacement: 'acceptable' },
+    { pattern: /\bsure thing\b/gi, replacement: 'certainly' },
+    { pattern: /\bdamn\b/gi, replacement: 'frankly' },
+    { pattern: /\bshit\b/gi, replacement: 'unfortunately' },
+    { pattern: /\bheck\b/gi, replacement: 'frankly' },
+    { pattern: /\bdude\b/gi, replacement: 'colleague' },
+    { pattern: /\bman\b/gi, replacement: 'individual' },
+    { pattern: /\bfriends\b/gi, replacement: 'associates' },
+    { pattern: /\bguys\b/gi, replacement: 'team' },
+    { pattern: /\bfolks\b/gi, replacement: 'colleagues' },
+    { pattern: /\bthings\b/gi, replacement: 'matters' },
+    { pattern: /\bstuff\b/gi, replacement: 'materials' },
+    { pattern: /\bstuff\b/gi, replacement: 'materials' },
+    { pattern: /\bjob\b/gi, replacement: 'assignment' },
+    { pattern: /\bwork\b/gi, replacement: 'endeavor' },
+    { pattern: /\bproblem\b/gi, replacement: 'challenge' },
+    { pattern: /\bissue\b/gi, replacement: 'matter' },
+    { pattern: /\bquestion\b/gi, replacement: 'inquiry' },
+    { pattern: /\bidea\b/gi, replacement: 'proposal' },
+    { pattern: /\bplan\b/gi, replacement: 'strategy' },
+    { pattern: /\bgoal\b/gi, replacement: 'objective' },
+    { pattern: /\bresult\b/gi, replacement: 'outcome' },
+    { pattern: /\bpart\b/gi, replacement: 'component' },
+    { pattern: /\bside\b/gi, replacement: 'aspect' },
+    { pattern: /\bpoint\b/gi, replacement: 'aspect' },
+    { pattern: /\bway\b/gi, replacement: 'manner' },
+    { pattern: /\bkind\b/gi, replacement: 'type' },
+    { pattern: /\btype\b/gi, replacement: 'category' },
+    { pattern: /\bsort\b/gi, replacement: 'category' },
+    { pattern: /\bright now\b/gi, replacement: 'at this time' },
+    { pattern: /\bsoon\b/gi, replacement: 'shortly' },
+    { pattern: /\blater\b/gi, replacement: 'subsequently' },
+    { pattern: /\bnow\b/gi, replacement: 'at present' },
+    { pattern: /\btoday\b/gi, replacement: 'on this date' },
+    { pattern: /\bthis week\b/gi, replacement: 'during the current week' },
+    { pattern: /\bnext week\b/gi, replacement: 'during the forthcoming week' },
+    { pattern: /\blast week\b/gi, replacement: 'during the previous week' },
+    { pattern: /\bthis month\b/gi, replacement: 'during the current month' },
+    { pattern: /\bnext month\b/gi, replacement: 'during the forthcoming month' },
+    { pattern: /\blast month\b/gi, replacement: 'during the previous month' },
+    { pattern: /\bthis year\b/gi, replacement: 'during the current year' },
+    { pattern: /\bnext year\b/gi, replacement: 'during the forthcoming year' },
+    { pattern: /\blast year\b/gi, replacement: 'during the previous year' },
+    { pattern: /\bfor sure\b/gi, replacement: 'without a doubt' },
+    { pattern: /\bin my opinion\b/gi, replacement: 'from my perspective' },
+    { pattern: /\bas far as i know\b/gi, replacement: 'to the best of my knowledge' },
+    { pattern: /\bon my end\b/gi, replacement: 'from my side' },
+    { pattern: /\bfrom my side\b/gi, replacement: 'on my end' },
+  ];
+
+  let polished = sentences.map(sentence => {
+    let s = sentence.trim();
+    // Capitalize first letter
+    s = s.charAt(0).toUpperCase() + s.slice(1);
+    // Apply upgrades
+    for (const { pattern, replacement } of upgrades) {
+      s = s.replace(pattern, replacement);
+    }
+    // Ensure proper punctuation
+    if (!/[.!?]$/.test(s)) s += '.';
+    return s;
+  });
+
+  // Build a well-structured formal email
+  let result = '';
+
+  // Add opening if not already present
+  const hasOpening = polished.some(s =>
+    s.match(/hope this message finds you/i) ||
+    s.match(/trust you are doing/i) ||
+    s.match(/i hope this email/i)
+  );
+  if (!hasOpening && polished.length > 0) {
+    result = openings[Math.floor(Math.random() * openings.length)] + '\n\n';
+  }
+
+  // Add the polished body
+  result += polished.join(' ');
+
+  // Add closing if not already present
+  const hasClosing = polished.some(s =>
+    s.match(/thank you for your time/i) ||
+    s.match(/appreciate your attention/i) ||
+    s.match(/sincerely/i) ||
+    s.match(/best regards/i)
+  );
+  if (!hasClosing) {
+    result += '\n\n' + closings[Math.floor(Math.random() * closings.length)];
+  }
+
+  // Add formal sign-off
+  result += '\n\nBest regards,';
+
+  return result;
+}
+
+function sendCompose() {
+  const to = document.getElementById('composeTo').value.trim();
+  const subject = document.getElementById('composeSubject').value.trim();
+  const body = document.getElementById('composeBody').value.trim();
+
+  if (!to && !subject && !body) {
+    showMsg('Windows Mail', 'The message cannot be sent because it is empty.', '\u26A0', [{ text: 'OK' }]);
+    return;
+  }
+
+  if (!to) {
+    showMsg('Windows Mail', 'The message cannot be sent because the To field is empty.', '\u26A0', [{ text: 'OK' }]);
+    return;
+  }
+
+  // Show progress
+  const actionText = composeMode === 'reply' ? 'Replying' : composeMode === 'forward' ? 'Forwarding' : 'Sending';
+  showProgress(`${actionText} message to ${to}...`, 2500, () => {
+    closeProgress();
+
+    // Create sent email
+    const now = new Date();
+    const dateStr = `${now.getMonth()+1}/${now.getDate()}/${now.getFullYear()}`;
+    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    let finalSubject = subject || '(No subject)';
+    let finalBody = body || '';
+
+    if (composeMode === 'reply' && replyToId) {
+      const orig = emails.find(e => e.id === replyToId);
+      if (orig) {
+        finalBody += `\n\n--- Original Message ---\nFrom: ${orig.from}\nSubject: ${orig.subject}\nDate: ${orig.date}\n\n${orig.body.replace(/<[^>]*>/g, '\n')}`;
+      }
+    } else if (composeMode === 'forward' && replyToId) {
+      const orig = emails.find(e => e.id === replyToId);
+      if (orig) {
+        finalBody += `\n\n--- Forwarded Message ---\nFrom: ${orig.from}\nSubject: ${orig.subject}\nDate: ${orig.date}\n\n${orig.body.replace(/<[^>]*>/g, '\n')}`;
+      }
     }
 
-    function draw() {
-      drawWater();
-      drawSand();
-      drawSeaweed();
+    // Polish the composed text into formal AI tone
+    finalBody = polishEmail(finalBody);
 
-      for (const f of fishes) {
-        f.update();
-        f.show();
-        // occasional bubble from a fish's mouth
-        if (random() < 0.004) {
-          bubbles.push(new Bubble(f.x + 34 * f.s, f.y - 6 * f.s, 3 + random(4)));
-        }
-      }
+    const newEmail = {
+      id: Date.now(),
+      folder: 'sent',
+      from: 'You',
+      email: 'you@company.com',
+      subject: finalSubject,
+      body: `<p>${finalBody.replace(/\n/g, '</p><p>')}</p>`,
+      date: dateStr,
+      time: timeStr,
+      unread: false,
+      starred: false,
+      hasAttachment: false
+    };
 
-      drawLight();
+    emails.unshift(newEmail);
+    closeCompose();
+    renderFolders();
+    setStatus('Message sent to ' + to);
+    showNotification(`\u2713 Message sent to ${to}`);
+  });
+}
 
-      for (let i = bubbles.length - 1; i >= 0; i--) {
-        const b = bubbles[i];
-        b.update();
-        b.show();
-        if (b.y < -20) bubbles.splice(i, 1);
-      }
-      // ambient bubbles rising from the bottom
-      if (random() < 0.06) bubbles.push(new Bubble(random(width), height + 10, 3 + random(7)));
-    }
+function saveDraft() {
+  const to = document.getElementById('composeTo').value.trim();
+  const subject = document.getElementById('composeSubject').value.trim();
+  const body = document.getElementById('composeBody').value.trim();
 
-    function windowResized() {
-      resizeCanvas(windowWidth, windowHeight);
-    }
+  if (!to && !subject && !body) {
+    showMsg('Windows Mail', 'Nothing to save.', '\u2139', [{ text: 'OK' }]);
+    return;
+  }
 
-    // ---------- scenery ----------
+  const newDraft = {
+    id: Date.now(),
+    folder: 'drafts',
+    from: 'You',
+    email: 'you@company.com',
+    subject: subject || '(No subject)',
+    body: `<p>${body.replace(/\n/g, '</p><p>')}</p>`,
+    date: new Date().toLocaleDateString(),
+    time: 'Draft',
+    unread: false,
+    starred: false,
+    hasAttachment: false
+  };
 
-    function drawWater() {
-      const ctx = drawingContext;
-      const g = ctx.createLinearGradient(0, 0, 0, height);
-      g.addColorStop(0, '#8fd3f4');
-      g.addColorStop(1, '#0b3c5d');
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, width, height);
-    }
+  emails.push(newDraft);
+  closeCompose();
+  renderFolders();
+  setStatus('Draft saved.');
+  showNotification('\u2713 Draft saved');
+}
 
-    function drawSand() {
-      noStroke();
-      fill(35, 45, 80);
-      rect(0, height - 28, width, 28);
-    }
+function sendReply() {
+  const text = document.getElementById('replyText').value.trim();
+  if (!text) {
+    showMsg('Windows Mail', 'The message cannot be sent because it is empty.', '\u26A0', [{ text: 'OK' }]);
+    return;
+  }
 
-    function drawSeaweed() {
-      noFill();
-      stroke(120, 60, 45, 90);
-      strokeWeight(8);
-      strokeJoin(ROUND);
-      for (let i = 0; i < 6; i++) {
-        const bx = ((i + 0.5) / 6) * width + noise(i * 7.7) * 80 - 40;
-        const hgt = 90 + noise(i * 12.3) * 150;
-        const sway = sin(frameCount * 0.02 + i * 1.7) * 22;
-        bezier(bx, height, bx + sway * 0.3, height - hgt * 0.5,
-               bx + sway * 0.8, height - hgt * 0.8, bx + sway, height - hgt);
-      }
-    }
+  if (!selectedEmailId) return;
+  const orig = emails.find(e => e.id === selectedEmailId);
+  if (!orig) return;
 
-    function drawLight() {
-      noStroke();
-      fill(0, 0, 100, 6);
-      for (let i = 0; i < 4; i++) {
-        const x = ((i + 0.5) / 4) * width + sin(frameCount * 0.005 + i * 2) * 40;
-        quad(x - 60, -10, x + 60, -10, x + 160, height * 0.7, x - 40, height * 0.7);
-      }
-    }
+  showProgress('Sending reply...', 2000, () => {
+    closeProgress();
 
-    // ---------- fish ----------
+    const now = new Date();
+    const dateStr = `${now.getMonth()+1}/${now.getDate()}/${now.getFullYear()}`;
+    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    class Fish {
-      constructor(startMid) {
-        this.s = random(0.5, 1.5);                            // scale
-        this.speed = random(1.5, 3) * (1.8 - this.s * 0.6);   // small fish dart faster
-        this.y = random(height * 0.08, height * 0.85);
-        this.x = startMid ? random(width) : -100 * this.s;
-        this.hue = random(360);
-        this.seed = random(1000);
-      }
+    const sentEmail = {
+      id: Date.now(),
+      folder: 'sent',
+      from: 'You',
+      email: 'you@company.com',
+      subject: 'Re: ' + orig.subject,
+      body: `<p>${polishEmail(text).replace(/\n/g, '</p><p>')}</p>`,
+      date: dateStr,
+      time: timeStr,
+      unread: false,
+      starred: false,
+      hasAttachment: false
+    };
 
-      update() {
-        this.x += this.speed;
-        if (this.x > width + 100 * this.s) {
-          this.x = -100 * this.s;                             // wrap back to the left
-          this.y = random(height * 0.08, height * 0.85);
-          this.hue = random(360);
-        }
-      }
+    emails.unshift(sentEmail);
+    document.getElementById('replyText').value = '';
+    renderFolders();
+    setStatus('Reply sent to ' + orig.from);
+    showNotification(`\u2713 Reply sent to ${orig.from}`);
+  });
+}
 
-      show() {
-        const bob = sin(frameCount * 0.03 + this.seed) * 8;   // gentle up/down drift
-        const wag = sin(frameCount * 0.25 + this.seed) * 0.35;
+// ==================== UI HELPERS ====================
+function setStatus(text) {
+  document.getElementById('statusText').textContent = text;
+}
 
-        push();
-        translate(this.x, this.y + bob);
-        scale(this.s);
+function showMsg(title, text, icon, buttons) {
+  document.getElementById('msgTitle').textContent = title;
+  document.getElementById('msgText').textContent = text;
+  document.getElementById('msgIcon').textContent = icon;
 
-        const body = color(this.hue, 70, 90);
-        const dark = color(this.hue, 80, 60);
+  const btnContainer = document.getElementById('msgButtons');
+  btnContainer.innerHTML = '';
+  buttons.forEach(b => {
+    const btn = document.createElement('button');
+    btn.className = 'win-btn';
+    btn.textContent = b.text;
+    btn.onclick = b.action || closeMsg;
+    btnContainer.appendChild(btn);
+  });
 
-        // tail (hinged at the rear, wagging)
-        push();
-        translate(-34, 0);
-        rotate(wag);
-        fill(dark);
-        triangle(0, -18, 0, 18, -26, 0);
-        pop();
+  document.getElementById('msgOverlay').classList.add('open');
+}
 
-        // body
-        fill(body);
-        noStroke();
-        ellipse(0, 0, 72, 34);
+function closeMsg() {
+  document.getElementById('msgOverlay').classList.remove('open');
+}
 
-        // stripe
-        fill(this.hue, 70, 55, 60);
-        ellipse(-14, 0, 8, 28);
+function showProgress(text, duration, callback) {
+  document.getElementById('progressText').textContent = text;
+  document.getElementById('progressBar').style.width = '0%';
+  document.getElementById('progressOverlay').classList.add('open');
 
-        // dorsal fin
-        fill(dark);
-        triangle(-8, -16, 16, -14, 4, -28);
+  let progress = 0;
+  const interval = setInterval(() => {
+    progress += Math.random() * 15 + 5;
+    if (progress > 95) progress = 95;
+    document.getElementById('progressBar').style.width = progress + '%';
+  }, 200);
 
-        // pectoral fin
-        push();
-        translate(-4, 6);
-        rotate(0.6 + wag * 0.5);
-        triangle(0, 0, 14, 2, 4, 12);
-        pop();
+  setTimeout(() => {
+    clearInterval(interval);
+    document.getElementById('progressBar').style.width = '100%';
+    setTimeout(() => {
+      closeProgress();
+      if (callback) callback();
+    }, 300);
+  }, duration);
+}
 
-        // eye
-        fill(0, 0, 100);
-        ellipse(22, -6, 10);
-        fill(0, 0, 0);
-        ellipse(24, -6, 5);
+function closeProgress() {
+  document.getElementById('progressOverlay').classList.remove('open');
+}
 
-        pop();
-      }
-    }
+function showNotification(text) {
+  const area = document.getElementById('notificationArea');
+  const notif = document.createElement('div');
+  notif.className = 'notification win-raised';
+  notif.innerHTML = `<span>&#9989;</span><span>${text}</span>`;
+  area.appendChild(notif);
+  setTimeout(() => {
+    notif.style.opacity = '0';
+    notif.style.transition = 'opacity 0.3s';
+    setTimeout(() => notif.remove(), 300);
+  }, 3000);
+}
 
-    // ---------- bubbles ----------
+function showAbout() {
+  showMsg('About Windows Mail',
+    'Windows Mail\nVersion 5.0\n\nCopyright (c) 2026 Windows Mail Corporation.\nAll rights reserved.\n\nThis product is for demonstration purposes only.',
+    '\u2139', [{ text: 'OK' }]);
+}
 
-    class Bubble {
-      constructor(x, y, r) {
-        this.x = x;
-        this.y = y;
-        this.r = r;
-        this.seed = random(1000);
-        this.speed = random(0.6, 1.6);
-      }
+function setToolbarStyle(style) {
+  setStatus('Toolbar style: ' + style);
+}
 
-      update() {
-        this.y -= this.speed;
-        this.x += sin(frameCount * 0.05 + this.seed) * 0.3;
-      }
+function setFontSize(size) {
+  setStatus('Font size: ' + size);
+}
 
-      show() {
-        noFill();
-        stroke(0, 0, 100, 50);
-        strokeWeight(1.5);
-        circle(this.x, this.y, this.r * 2);
-      }
-    }
-  </script>
+function toggleDetailPane() {
+  const pane = document.getElementById('detailPane');
+  pane.classList.toggle('visible');
+}
+
+function showContext(e, id) {
+  e.preventDefault();
+  selectedEmailId = id;
+  const menu = document.getElementById('contextMenu');
+  menu.style.left = e.clientX + 'px';
+  menu.style.top = e.clientY + 'px';
+  menu.classList.add('open');
+}
+
+// Close context menu on click outside
+document.addEventListener('click', () => {
+  document.getElementById('contextMenu').classList.remove('open');
+});
+
+function showAddressBook() {
+  const existing = document.getElementById('addressBookWindow');
+  if (existing) { existing.remove(); return; }
+
+  const contacts = [
+    { name: 'Alice Johnson', email: 'alice@company.com' },
+    { name: 'Bob Smith', email: 'bob@company.com' },
+    { name: 'Carol Williams', email: 'carol@company.com' },
+    { name: 'David Brown', email: 'david@company.com' },
+    { name: 'Eve Davis', email: 'eve@partner.org' },
+    { name: 'Frank Miller', email: 'frank@partner.org' },
+    { name: 'Grace Lee', email: 'grace@vendor.net' },
+    { name: 'Henry Wilson', email: 'henry@vendor.net' },
+  ];
+
+  const win = document.createElement('div');
+  win.className = 'msg-box';
+  win.id = 'addressBookWindow';
+  win.style.display = 'flex';
+  win.style.flexDirection = 'column';
+  win.style.minWidth = '320px';
+
+  const ww = window.innerWidth, wh = window.innerHeight;
+  win.style.left = Math.max(50, (ww - 360) / 2) + 'px';
+  win.style.top = Math.max(30, (wh - 400) / 2) + 'px';
+
+  win.innerHTML = `
+    <div class="msg-title-bar">
+      <span>Address Book</span>
+      <button onclick="this.closest('.msg-box').remove()">&times;</button>
+    </div>
+    <div style="padding:8px 12px; overflow-y:auto; max-height:280px;">
+      <table style="width:100%; border-collapse:collapse; font-size:12px;">
+        <tr style="background:var(--win-bg);">
+          <th style="text-align:left; padding:3px 6px; border-bottom:1px solid var(--win-dark); font-size:12px;">Name</th>
+          <th style="text-align:left; padding:3px 6px; border-bottom:1px solid var(--win-dark); font-size:12px;">E-mail</th>
+        </tr>
+        ${contacts.map(c => `
+          <tr style="cursor:pointer;">
+            <td style="padding:2px 6px; font-size:12px;" onmouseover="this.style.background='#e0e0e0'" onmouseout="this.style.background=''">${c.name}</td>
+            <td style="padding:2px 6px; font-size:12px;" onmouseover="this.style.background='#e0e0e0'" onmouseout="this.style.background=''">${c.email}</td>
+          </tr>
+        `).join('')}
+      </table>
+    </div>
+    <div style="display:flex; justify-content:flex-end; gap:4px; padding:6px 12px 8px;">
+      <button class="win-btn" onclick="this.closest('.msg-box').remove()">OK</button>
+    </div>
+  `;
+
+  document.body.appendChild(win);
+}
+
+// ==================== INIT ====================
+renderFolders();
+renderEmailList();
+setStatus('Ready');
+</script>
 </body>
 </html>
