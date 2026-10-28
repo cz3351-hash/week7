@@ -1848,72 +1848,196 @@ function closeCompose() {
 }
 
 // ==================== AI EMAIL POLISHER ====================
+
+// Generate a formal subject line from email body content
+function generateSubjectFromBody(body) {
+  // Strip HTML and extract plain text
+  let plain = body.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&');
+  // Remove greeting and sign-off lines
+  plain = plain.replace(/^Dear\s+.*?,\s*\n\n/mi, '').replace(/\n\nBest regards,?\n.*$/mi, '');
+  // Remove quoted message blocks
+  plain = plain.replace(/^-{3,}\s*(Original|Forwarded)\s*Message\s*-{3,}[\s\S]*$/mi, '').trim();
+
+  // Extract key topics from the body
+  const lower = plain.toLowerCase();
+  const keyTopics = [
+    { keywords: ['project', 'group', 'assignment', 'homework', 'class'], subject: 'Group Project Coordination' },
+    { keywords: ['meet', 'meeting', 'schedule', 'available', 'time'], subject: 'Meeting Request' },
+    { keywords: ['question', 'inquire', 'ask', 'wondering', 'help'], subject: 'Inquiry Regarding Academic Matter' },
+    { keywords: ['request', 'requesting', 'apply', 'application'], subject: 'Formal Request' },
+    { keywords: ['follow', 'update', 'status', 'progress', 'check'], subject: 'Follow-Up on Previous Correspondence' },
+    { keywords: ['thank', 'appreciate', 'grateful'], subject: 'Expression of Gratitude' },
+    { keywords: ['deadline', 'due', 'submit', 'submission'], subject: 'Important: Submission Deadline Reminder' },
+    { keywords: ['schedule', 'course', 'class', 'enroll', 'registration'], subject: 'Course Schedule Inquiry' },
+    { keywords: ['research', 'lab', 'position', 'assistant'], subject: 'Research Position Inquiry' },
+    { keywords: ['meeting', 'discuss', 'discussing'], subject: 'Request for Meeting' },
+    { keywords: ['availability', 'free', 'busy'], subject: 'Availability Inquiry' },
+    { keywords: ['project', 'work', 'collaborate'], subject: 'Project Collaboration Proposal' },
+    { keywords: ['policy', 'rule', 'guideline', 'procedure'], subject: 'Policy Inquiry' },
+    { keywords: ['feedback', 'review', 'feedback'], subject: 'Request for Feedback' },
+    { keywords: ['introduction', 'introduce', 'new'], subject: 'Introduction and Inquiry' },
+  ];
+
+  // Check for key topics
+  for (const { keywords, subject } of keyTopics) {
+    if (keywords.some(kw => lower.includes(kw))) {
+      return subject;
+    }
+  }
+
+  // Fallback: extract first meaningful phrase (up to 60 chars)
+  const firstSentence = plain.split(/[.!?]/).map(s => s.trim()).find(s => s.length > 10);
+  if (firstSentence) {
+    let subj = firstSentence.substring(0, 60);
+    // Capitalize properly
+    subj = subj.charAt(0).toUpperCase() + subj.slice(1);
+    // Remove trailing punctuation
+    subj = subj.replace(/[.,;:!?]$/, '');
+    return subj + ':';
+  }
+
+  return 'Important Correspondence';
+}
+
 function polishEmail(text) {
   // Strip HTML tags for processing
-  const plain = text.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+  let plain = text.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
 
-  // Normalize whitespace
-  const sentences = plain.split(/(?<=[.!?])\s+/).map(s => s.trim()).filter(Boolean);
+  // Remove quoted/forwarded message markers
+  plain = plain.replace(/^-{3,}\s*(Original|Forwarded)\s*Message\s*-{3,}[\s\S]*$/mi, '').trim();
 
-  // Polished opening/closing phrases
-  const openings = [
-    'I hope this message finds you well.',
-    'I trust you are doing well.',
-    'I hope this email finds you in good health.',
-    'I hope this message meets you well.',
-  ];
-  const closings = [
-    'Thank you for your time and consideration.',
-    'I appreciate your attention to this matter.',
-    'Thank you for your time and consideration in this matter.',
-    'I appreciate your time and assistance with this matter.',
-  ];
+  // Split into lines and trim
+  const lines = plain.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
 
-  // Politeness / formality upgrades
-  const upgrades = [
-    { pattern: /\bi want\b/gi, replacement: 'I would like' },
-    { pattern: /\bi need\b/gi, replacement: 'I would appreciate it if you could' },
-    { pattern: /\bi don't\b/gi, replacement: 'I do not' },
-    { pattern: /\bi can't\b/gi, replacement: 'I am unable to' },
-    { pattern: /\bi'm\b/gi, replacement: 'I am' },
-    { pattern: /\bi'll\b/gi, replacement: 'I will' },
-    { pattern: /\bi've\b/gi, replacement: 'I have' },
-    { pattern: /\bi'd\b/gi, replacement: 'I would' },
-    { pattern: /\byou're\b/gi, replacement: 'you are' },
-    { pattern: /\byou'll\b/gi, replacement: 'you will' },
-    { pattern: /\byour welcome\b/gi, replacement: 'you are welcome' },
-    { pattern: /\bit's\b/gi, replacement: 'it is' },
-    { pattern: /\bthat's\b/gi, replacement: 'that is' },
-    { pattern: /\bwhat's\b/gi, replacement: 'what is' },
-    { pattern: /\bwho's\b/gi, replacement: 'who is' },
+  // ---- Parse: extract greeting, body, sign-off name ----
+  let greeting = '';
+  let recipientName = '';
+  let signOffName = '';
+  let bodyLines = [];
+
+  // Greeting patterns: "hello jyce", "hi joyce", "hey alex", "dear professor"
+  const greetingPattern = /^(?:hello|hi|hey|dear|greetings|good\s+(?:morning|afternoon|evening))\s*,?\s*(.+)?$/i;
+  // Sign-off patterns: "best, jyce", "thanks, alex", "from, john"
+  const signOffPattern = /^(?:best\s+regards?|regards?|sincerely|kind\s+regards?|thanks?|cheers|warm\s+regards?|all\s+the\s+best|take\s+care|see\s+you|bye|later|yours\s+(?:truly|sincerely)|with\s+appreciation|with\s+best\s+wishes),?\s*(.+)?$/i;
+
+  let firstLineIdx = 0;
+  let lastLineIdx = lines.length - 1;
+
+  // Extract greeting from first line
+  if (greetingPattern.test(lines[0])) {
+    const m = lines[0].match(greetingPattern);
+    greeting = lines[0].trim();
+    recipientName = (m && m[1] ? m[1].trim() : '');
+    firstLineIdx = 1;
+  }
+
+  // Extract sign-off from last line
+  if (lastLineIdx >= firstLineIdx && signOffPattern.test(lines[lastLineIdx])) {
+    const m = lines[lastLineIdx].match(signOffPattern);
+    signOffName = (m && m[1] ? m[1].trim() : '');
+    lastLineIdx -= 1;
+  }
+
+  // Collect body lines (between greeting and sign-off)
+  for (let i = firstLineIdx; i <= lastLineIdx; i++) {
+    if (lines[i].length > 0) bodyLines.push(lines[i]);
+  }
+
+  // ---- Formalize the greeting ----
+  let formalGreeting = '';
+  if (recipientName) {
+    // Capitalize the name properly
+    const formattedName = recipientName.split(/\s+/).map(w =>
+      w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+    ).join(' ');
+    formalGreeting = `Dear ${formattedName},`;
+  } else {
+    formalGreeting = 'Dear Colleague,';
+  }
+
+  // ---- Formalize the body content ----
+  // Join body lines into a single text block
+  let bodyText = bodyLines.join(' ').trim();
+
+  // If body is empty, create a generic placeholder
+  if (!bodyText) {
+    bodyText = 'I am writing to you regarding a matter that requires your attention.';
+  }
+
+  // Step 1: Expand contractions
+  bodyText = bodyText
+    .replace(/\bi\b(?!\s+am|'m)/g, 'I')
+    .replace(/\bi'm\b/gi, 'I am')
+    .replace(/\bi'll\b/gi, 'I will')
+    .replace(/\bi've\b/gi, 'I have')
+    .replace(/\bi'd\b/gi, 'I would')
+    .replace(/\bi'd\b/gi, 'I would')
+    .replace(/\bi'm\b/gi, 'I am')
+    .replace(/\bi\breally\b/gi, 'I truly')
+    .replace(/\byou're\b/gi, 'you are')
+    .replace(/\byou'll\b/gi, 'you will')
+    .replace(/\bit's\b/gi, 'it is')
+    .replace(/\bit\b's\b/gi, 'it is')
+    .replace(/\bthat's\b/gi, 'that is')
+    .replace(/\bwhat's\b/gi, 'what is')
+    .replace(/\bwho's\b/gi, 'who is')
+    .replace(/\bcan't\b/gi, 'cannot')
+    .replace(/\bdon't\b/gi, 'do not')
+    .replace(/\bdon't\b/gi, 'do not')
+    .replace(/\bdidn't\b/gi, 'did not')
+    .replace(/\bwasn't\b/gi, 'was not')
+    .replace(/\bwere\b+not\b/gi, 'were not')
+    .replace(/\bwasn't\b/gi, 'was not')
+    .replace(/\bweren't\b/gi, 'were not')
+    .replace(/\bhasn't\b/gi, 'has not')
+    .replace(/\bhaven't\b/gi, 'have not')
+    .replace(/\bhasn't\b/gi, 'has not')
+    .replace(/\bwouldn't\b/gi, 'would not')
+    .replace(/\bcouldn't\b/gi, 'could not')
+    .replace(/\bshouldn't\b/gi, 'should not')
+    .replace(/\bdoesn't\b/gi, 'does not')
+    .replace(/\bdidn't\b/gi, 'did not')
+    .replace(/\bain't\b/gi, 'is not');
+
+  // Step 2: Upgrade casual phrases and vocabulary
+  const phrasalUpgrades = [
+    { pattern: /\bi want\b/gi, replacement: 'I would like to' },
+    { pattern: /\bi need\b/gi, replacement: 'I would appreciate it if' },
     { pattern: /\bcan you\b/gi, replacement: 'could you please' },
     { pattern: /\bplease send\b/gi, replacement: 'kindly forward' },
-    { pattern: /\bthanks\b/gi, replacement: 'thank you' },
-    { pattern: /\bthank you for letting me\b/gi, replacement: 'thank you for informing me' },
-    { pattern: /\blet me know\b/gi, replacement: 'please do not hesitate to let me know' },
+    { pattern: /\blet me know\b/gi, replacement: 'please advise' },
     { pattern: /\blet me\b/gi, replacement: 'allow me to' },
     { pattern: /\bjust checking\b/gi, replacement: 'I am writing to follow up' },
     { pattern: /\bjust wanted\b/gi, replacement: 'I am reaching out to' },
     { pattern: /\bhey\b/gi, replacement: 'hello' },
-    { pattern: /\bhi\b/gi, replacement: 'hello' },
     { pattern: /\bgonna\b/gi, replacement: 'going to' },
-    { pattern: /\bwanna\b/gi, replacement: 'want to' },
-    { pattern: /\bgotta\b/gi, replacement: 'have to' },
-    { pattern: /\bgonna\b/gi, replacement: 'going to' },
+    { pattern: /\bwanna\b/gi, replacement: 'wish to' },
+    { pattern: /\bgotta\b/gi, replacement: 'need to' },
     { pattern: /\bkinda\b/gi, replacement: 'somewhat' },
     { pattern: /\bsort of\b/gi, replacement: 'to some extent' },
-    { pattern: /\ba lot\b/gi, replacement: 'significantly' },
-    { pattern: /\bvery good\b/gi, replacement: 'excellent' },
-    { pattern: /\bvery bad\b/gi, replacement: 'unsatisfactory' },
-    { pattern: /\bvery important\b/gi, replacement: 'of paramount importance' },
-    { pattern: /\bvery happy\b/gi, replacement: 'delighted' },
-    { pattern: /\bvery sad\b/gi, replacement: 'disappointed' },
-    { pattern: /\bget back\b/gi, replacement: 'respond' },
-    { pattern: /\bget\b/gi, replacement: 'receive' },
+    { pattern: /\ba lot\b/gi, replacement: 'considerably' },
+    { pattern: /\blet's\b/gi, replacement: 'let us' },
+    { pattern: /\bwe're\b/gi, replacement: 'we are' },
+    { pattern: /\bthey're\b/gi, replacement: 'they are' },
+    { pattern: /\bthere's\b/gi, replacement: 'there is' },
+    { pattern: /\bhere's\b/gi, replacement: 'here is' },
+    { pattern: /\bthat'll\b/gi, replacement: 'that will' },
+    { pattern: /\bthere'll\b/gi, replacement: 'there will' },
+    { pattern: /\bdunno\b/gi, replacement: 'do not know' },
+    { pattern: /\bgonna\b/gi, replacement: 'going to' },
+  ];
+
+  for (const { pattern, replacement } of phrasalUpgrades) {
+    bodyText = bodyText.replace(pattern, replacement);
+  }
+
+  // Step 3: Upgrade individual words (carefully, avoiding over-replacement)
+  const wordUpgrades = [
+    { pattern: /\bhelp\b/gi, replacement: 'assist' },
+    { pattern: /\bget\b/gi, replacement: 'obtain' },
     { pattern: /\buse\b/gi, replacement: 'utilize' },
     { pattern: /\bbuy\b/gi, replacement: 'purchase' },
-    { pattern: /\bhelp\b/gi, replacement: 'assist' },
-    { pattern: /\bstart\b/gi, replacement: 'commence' },
+    { pattern: /\bstart\b/gi, replacement: 'begin' },
     { pattern: /\bend\b/gi, replacement: 'conclude' },
     { pattern: /\bask\b/gi, replacement: 'inquire' },
     { pattern: /\bneed\b/gi, replacement: 'require' },
@@ -1927,159 +2051,188 @@ function polishEmail(text) {
     { pattern: /\bcheck\b/gi, replacement: 'review' },
     { pattern: /\blook into\b/gi, replacement: 'investigate' },
     { pattern: /\bbring up\b/gi, replacement: 'raise' },
-    { pattern: /\bpoint out\b/gi, replacement: 'highlight' },
-    { pattern: /\bcome up\b/gi, replacement: 'arise' },
-    { pattern: /\bput off\b/gi, replacement: 'postpone' },
-    { pattern: /\bfigure out\b/gi, replacement: 'determine' },
-    { pattern: /\bsort out\b/gi, replacement: 'resolve' },
     { pattern: /\bdeal with\b/gi, replacement: 'address' },
     { pattern: /\bcome up with\b/gi, replacement: 'develop' },
-    { pattern: /\bkeep track\b/gi, replacement: 'monitor' },
     { pattern: /\bset up\b/gi, replacement: 'establish' },
-    { pattern: /\bthrow away\b/gi, replacement: 'discard' },
-    { pattern: /\bcome up against\b/gi, replacement: 'encounter' },
     { pattern: /\bgo over\b/gi, replacement: 'review' },
-    { pattern: /\bcarry out\b/gi, replacement: 'execute' },
     { pattern: /\bwork on\b/gi, replacement: 'collaborate on' },
-    { pattern: /\bmove forward\b/gi, replacement: 'proceed' },
-    { pattern: /\bkeep in mind\b/gi, replacement: 'bear in mind' },
     { pattern: /\bget together\b/gi, replacement: 'meet' },
-    { pattern: /\blook forward\b/gi, replacement: 'anticipate' },
-    { pattern: /\bbest regards\b/gi, replacement: 'Sincerely' },
-    { pattern: /\bcheers\b/gi, replacement: 'Best regards' },
-    { pattern: /\bspeaking of which\b/gi, replacement: 'incidentally' },
-    { pattern: /\bon the other hand\b/gi, replacement: 'conversely' },
-    { pattern: /\bin other words\b/gi, replacement: 'to reiterate' },
-    { pattern: /\bas well as\b/gi, replacement: 'in addition to' },
-    { pattern: /\bnext to\b/gi, replacement: 'adjacent to' },
-    { pattern: /\binstead of\b/gi, replacement: 'in lieu of' },
-    { pattern: /\bdue to\b/gi, replacement: 'as a result of' },
-    { pattern: /\bas a result\b/gi, replacement: 'consequently' },
-    { pattern: /\bhowever\b/gi, replacement: 'nevertheless' },
-    { pattern: /\bfurthermore\b/gi, replacement: 'additionally' },
-    { pattern: /\bmoreover\b/gi, replacement: 'additionally' },
-    { pattern: /\btherefore\b/gi, replacement: 'accordingly' },
-    { pattern: /\bsimilarly\b/gi, replacement: 'in a similar vein' },
-    { pattern: /\bso\b/gi, replacement: 'therefore' },
-    { pattern: /\bbut\b/gi, replacement: 'however' },
-    { pattern: /\balso\b/gi, replacement: 'additionally' },
-    { pattern: /\breally\b/gi, replacement: 'considerably' },
-    { pattern: /\bsuper\b/gi, replacement: 'exceptionally' },
-    { pattern: /\bcrazy\b/gi, replacement: 'extraordinary' },
-    { pattern: /\bawesome\b/gi, replacement: 'remarkable' },
-    { pattern: /\bpretty good\b/gi, replacement: 'quite satisfactory' },
-    { pattern: /\bnot bad\b/gi, replacement: 'acceptable' },
-    { pattern: /\bkind of\b/gi, replacement: 'somewhat' },
-    { pattern: /\bkinda\b/gi, replacement: 'to some degree' },
-    { pattern: /\bsure\b/gi, replacement: 'certainly' },
-    { pattern: /\bof course\b/gi, replacement: 'undoubtedly' },
-    { pattern: /\byeah\b/gi, replacement: 'affirmative' },
-    { pattern: /\bno way\b/gi, replacement: 'under no circumstances' },
-    { pattern: /\bno problem\b/gi, replacement: 'you are most welcome' },
+    { pattern: /\blook forward\b/gi, replacement: 'look forward' },
+    { pattern: /\bthanks\b/gi, replacement: 'thank you' },
+    { pattern: /\bthank you for letting me\b/gi, replacement: 'thank you for informing me' },
     { pattern: /\bsorry\b/gi, replacement: 'I apologize' },
-    { pattern: /\bexcuse me\b/gi, replacement: 'pardon me' },
-    { pattern: /\bwait\b/gi, replacement: 'please hold' },
-    { pattern: /\bquick\b/gi, replacement: 'prompt' },
-    { pattern: /\bsimple\b/gi, replacement: 'straightforward' },
-    { pattern: /\beasy\b/gi, replacement: 'effortless' },
-    { pattern: /\bfine\b/gi, replacement: 'satisfactory' },
+    { pattern: /\bbest\b/gi, replacement: 'best' },
     { pattern: /\bgreat\b/gi, replacement: 'excellent' },
+    { pattern: /\bquick\b/gi, replacement: 'prompt' },
+    { pattern: /\bproblem\b/gi, replacement: 'matter' },
+    { pattern: /\bidea\b/gi, replacement: 'proposal' },
+    { pattern: /\bplan\b/gi, replacement: 'plan' },
+    { pattern: /\bway\b/gi, replacement: 'manner' },
+    { pattern: /\bnow\b/gi, replacement: 'at this time' },
+    { pattern: /\bsoon\b/gi, replacement: 'shortly' },
+    { pattern: /\bsure\b/gi, replacement: 'certainly' },
+    { pattern: /\bof course\b/gi, replacement: 'certainly' },
+    { pattern: /\byeah\b/gi, replacement: 'yes' },
     { pattern: /\bokay\b/gi, replacement: 'acceptable' },
     { pattern: /\bok\b/gi, replacement: 'acknowledged' },
     { pattern: /\bcool\b/gi, replacement: 'acceptable' },
-    { pattern: /\bsure thing\b/gi, replacement: 'certainly' },
-    { pattern: /\bdamn\b/gi, replacement: 'frankly' },
-    { pattern: /\bshit\b/gi, replacement: 'unfortunately' },
-    { pattern: /\bheck\b/gi, replacement: 'frankly' },
-    { pattern: /\bdude\b/gi, replacement: 'colleague' },
-    { pattern: /\bman\b/gi, replacement: 'individual' },
-    { pattern: /\bfriends\b/gi, replacement: 'associates' },
-    { pattern: /\bguys\b/gi, replacement: 'team' },
-    { pattern: /\bfolks\b/gi, replacement: 'colleagues' },
+    { pattern: /\bsuper\b/gi, replacement: 'exceptionally' },
+    { pattern: /\bcrazy\b/gi, replacement: 'extraordinary' },
+    { pattern: /\bawesome\b/gi, replacement: 'remarkable' },
+    { pattern: /\breally\b/gi, replacement: 'truly' },
+    { pattern: /\balso\b/gi, replacement: 'additionally' },
+    { pattern: /\bso\b/gi, replacement: 'therefore' },
+    { pattern: /\bbut\b/gi, replacement: 'however' },
+    { pattern: /\bvery\b/gi, replacement: 'very' },
     { pattern: /\bthings\b/gi, replacement: 'matters' },
     { pattern: /\bstuff\b/gi, replacement: 'materials' },
-    { pattern: /\bstuff\b/gi, replacement: 'materials' },
     { pattern: /\bjob\b/gi, replacement: 'assignment' },
-    { pattern: /\bwork\b/gi, replacement: 'endeavor' },
-    { pattern: /\bproblem\b/gi, replacement: 'challenge' },
+    { pattern: /\bwork\b/gi, replacement: 'work' },
     { pattern: /\bissue\b/gi, replacement: 'matter' },
     { pattern: /\bquestion\b/gi, replacement: 'inquiry' },
-    { pattern: /\bidea\b/gi, replacement: 'proposal' },
-    { pattern: /\bplan\b/gi, replacement: 'strategy' },
     { pattern: /\bgoal\b/gi, replacement: 'objective' },
     { pattern: /\bresult\b/gi, replacement: 'outcome' },
     { pattern: /\bpart\b/gi, replacement: 'component' },
-    { pattern: /\bside\b/gi, replacement: 'aspect' },
-    { pattern: /\bpoint\b/gi, replacement: 'aspect' },
-    { pattern: /\bway\b/gi, replacement: 'manner' },
+    { pattern: /\bpoint\b/gi, replacement: 'point' },
     { pattern: /\bkind\b/gi, replacement: 'type' },
-    { pattern: /\btype\b/gi, replacement: 'category' },
-    { pattern: /\bsort\b/gi, replacement: 'category' },
-    { pattern: /\bright now\b/gi, replacement: 'at this time' },
-    { pattern: /\bsoon\b/gi, replacement: 'shortly' },
-    { pattern: /\blater\b/gi, replacement: 'subsequently' },
-    { pattern: /\bnow\b/gi, replacement: 'at present' },
-    { pattern: /\btoday\b/gi, replacement: 'on this date' },
-    { pattern: /\bthis week\b/gi, replacement: 'during the current week' },
-    { pattern: /\bnext week\b/gi, replacement: 'during the forthcoming week' },
-    { pattern: /\blast week\b/gi, replacement: 'during the previous week' },
-    { pattern: /\bthis month\b/gi, replacement: 'during the current month' },
-    { pattern: /\bnext month\b/gi, replacement: 'during the forthcoming month' },
-    { pattern: /\blast month\b/gi, replacement: 'during the previous month' },
-    { pattern: /\bthis year\b/gi, replacement: 'during the current year' },
-    { pattern: /\bnext year\b/gi, replacement: 'during the forthcoming year' },
-    { pattern: /\blast year\b/gi, replacement: 'during the previous year' },
+    { pattern: /\btype\b/gi, replacement: 'type' },
+    { pattern: /\bsort\b/gi, replacement: 'type' },
+    { pattern: /\bfriends\b/gi, replacement: 'peers' },
+    { pattern: /\bguys\b/gi, replacement: 'individuals' },
+    { pattern: /\bfolks\b/gi, replacement: 'colleagues' },
+    { pattern: /\bdude\b/gi, replacement: 'colleague' },
+    { pattern: /\bman\b/gi, replacement: 'person' },
+    { pattern: /\bwait\b/gi, replacement: 'please hold' },
+    { pattern: /\bexcuse me\b/gi, replacement: 'pardon me' },
+    { pattern: /\bsimple\b/gi, replacement: 'straightforward' },
+    { pattern: /\beasy\b/gi, replacement: 'straightforward' },
+    { pattern: /\bfine\b/gi, replacement: 'satisfactory' },
+    { pattern: /\bpretty good\b/gi, replacement: 'quite satisfactory' },
+    { pattern: /\bnot bad\b/gi, replacement: 'acceptable' },
+    { pattern: /\bkind of\b/gi, replacement: 'somewhat' },
     { pattern: /\bfor sure\b/gi, replacement: 'without a doubt' },
     { pattern: /\bin my opinion\b/gi, replacement: 'from my perspective' },
     { pattern: /\bas far as i know\b/gi, replacement: 'to the best of my knowledge' },
-    { pattern: /\bon my end\b/gi, replacement: 'from my side' },
-    { pattern: /\bfrom my side\b/gi, replacement: 'on my end' },
   ];
 
-  let polished = sentences.map(sentence => {
-    let s = sentence.trim();
+  for (const { pattern, replacement } of wordUpgrades) {
+    bodyText = bodyText.replace(pattern, replacement);
+  }
+
+  // Step 4: Fix capitalization for sentence boundaries
+  // Split into sentences, capitalize first letter of each
+  let sentences = bodyText.split(/(?<=[.!?])\s+/).map(s => s.trim()).filter(Boolean);
+  sentences = sentences.map(s => {
+    if (!s) return s;
     // Capitalize first letter
-    s = s.charAt(0).toUpperCase() + s.slice(1);
-    // Apply upgrades
-    for (const { pattern, replacement } of upgrades) {
-      s = s.replace(pattern, replacement);
-    }
+    let result = s.charAt(0).toUpperCase() + s.slice(1);
     // Ensure proper punctuation
-    if (!/[.!?]$/.test(s)) s += '.';
-    return s;
+    if (!/[.!?]$/.test(result)) result += '.';
+    return result;
   });
+  bodyText = sentences.join(' ');
 
-  // Build a well-structured formal email
+  // Step 5: Build the formal body with proper structure
+  let formalBody = '';
+
+  // Opening sentence after greeting
+  formalBody = 'I hope this message finds you well.';
+
+  // If the body is just a simple greeting + question, expand it
+  const hasSubjectVerb = /\b(i|you|we|they|he|she|it|my|our|their)\b/i.test(bodyText);
+  const isSimple = bodyText.length < 60 && sentences.length <= 2;
+
+  if (isSimple) {
+    // Expand simple messages into fuller formal statements
+    const expandedBody = expandSimpleMessage(bodyText, recipientName);
+    formalBody += '\n\n' + expandedBody;
+  } else {
+    formalBody += '\n\n' + bodyText;
+  }
+
+  // Step 6: Add closing
+  const closings = [
+    'Thank you for your time and consideration.',
+    'I appreciate your attention to this matter.',
+    'Thank you for your time and consideration in this matter.',
+    'I appreciate your time and assistance with this matter.',
+  ];
+  const hasClosing = bodyText.match(/thank you for your time|appreciate your attention|sincerely|best regards|kind regards/i);
+  const closing = hasClosing ? '' : '\n\n' + closings[Math.floor(Math.random() * closings.length)];
+
+  // Step 7: Determine sign-off name
+  let signOffNameFinal = signOffName;
+  if (!signOffNameFinal) {
+    // No name was signed - use "I" as the sign-off
+    signOffNameFinal = 'I';
+  } else {
+    // Capitalize the detected name properly
+    signOffNameFinal = signOffNameFinal.split(/\s+/).map(w =>
+      w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+    ).join(' ');
+  }
+
+  // Build final email
   let result = '';
-
-  // Add opening if not already present
-  const hasOpening = polished.some(s =>
-    s.match(/hope this message finds you/i) ||
-    s.match(/trust you are doing/i) ||
-    s.match(/i hope this email/i)
-  );
-  if (!hasOpening && polished.length > 0) {
-    result = openings[Math.floor(Math.random() * openings.length)] + '\n\n';
-  }
-
-  // Add the polished body
-  result += polished.join(' ');
-
-  // Add closing if not already present
-  const hasClosing = polished.some(s =>
-    s.match(/thank you for your time/i) ||
-    s.match(/appreciate your attention/i) ||
-    s.match(/sincerely/i) ||
-    s.match(/best regards/i)
-  );
-  if (!hasClosing) {
-    result += '\n\n' + closings[Math.floor(Math.random() * closings.length)];
-  }
-
-  // Add formal sign-off
+  result += formalGreeting + '\n\n';
+  result += formalBody;
+  result += closing;
   result += '\n\nBest regards,';
+  result += '\n' + signOffNameFinal;
 
   return result;
+}
+
+// Expand simple/casual messages into fuller formal statements
+function expandSimpleMessage(body, recipientName) {
+  const lower = body.toLowerCase();
+
+  // Detect intent keywords
+  const isMeeting = /\bmeet|free|time|wed|thurs|fri|mon|tues|sun|avail|schedule|when\b/.test(lower);
+  const isProject = /\bproject|group|assignment|homework|class|team|work on|finish\b/.test(lower);
+  const isQuestion = /\bwhen|where|what|who|how|can|could|would|should|is there\b/.test(lower);
+  const isRequest = /\bsend|give|provide|share|help|need|ask|want|please\b/.test(lower);
+  const isFollowUp = /\bfollow|check|update|status|progress|done|complete\b/.test(lower);
+
+  // If it's a meeting request
+  if (isMeeting) {
+    const timeRef = lower.match(/\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday|this\s+week|next\s+week|tomorrow|soon|later)\b/i);
+    let timeStr = '';
+    if (timeRef) {
+      const formatted = timeRef[0].split(/\s+/).map(w =>
+        w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+      ).join(' ');
+      timeStr = ` at your earliest convenience${timeRef[0].match(/wed|thurs/i) ? ' on a day that works best for you' : ''}`;
+    }
+
+    if (isProject) {
+      return `I am writing to discuss the group project that we were assigned in our recent class. I believe it would be beneficial for us to find a suitable time to meet and begin working on it together.${timeStr} Please let me know your availability, and I will do my best to accommodate your schedule.`;
+    }
+    return `I am writing to inquire about your availability${timeStr}. I would greatly appreciate the opportunity to meet with you to discuss a matter of mutual interest. Please let me know what time would be most convenient for you, and I will make the necessary arrangements.`;
+  }
+
+  // If it's a project-related message
+  if (isProject) {
+    return `I am writing regarding the group project that we were assigned during our recent class. As we have been placed in the same group, I believe it would be advantageous for us to coordinate our efforts and establish a timeline for completion.${recipientName ? ' I am confident that, with our combined efforts, we can produce a high-quality result.' : ''} Could you please let me know your availability so that we may schedule a time to work together?`;
+  }
+
+  // If it's a question
+  if (isQuestion) {
+    return `I am writing to inquire about a matter that I would appreciate your guidance on. ${body.charAt(0).toUpperCase() + body.slice(1)}`;
+  }
+
+  // If it's a request
+  if (isRequest) {
+    return `I am reaching out to kindly request your assistance with a matter. ${body.charAt(0).toUpperCase() + body.slice(1)}`;
+  }
+
+  // If it's a follow-up
+  if (isFollowUp) {
+    return `I am writing to follow up on our previous correspondence. ${body.charAt(0).toUpperCase() + body.slice(1)}`;
+  }
+
+  // Default: just formalize what was given
+  return body.charAt(0).toUpperCase() + body.slice(1);
 }
 
 function sendCompose() {
@@ -2107,7 +2260,7 @@ function sendCompose() {
     const dateStr = `${now.getMonth()+1}/${now.getDate()}/${now.getFullYear()}`;
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    let finalSubject = subject || '(No subject)';
+    let finalSubject = subject || '';
     let finalBody = body || '';
 
     if (composeMode === 'reply' && replyToId) {
@@ -2124,6 +2277,11 @@ function sendCompose() {
 
     // Polish the composed text into formal AI tone
     finalBody = polishEmail(finalBody);
+
+    // Auto-generate subject if none provided
+    if (!finalSubject) {
+      finalSubject = generateSubjectFromBody(finalBody);
+    }
 
     const newEmail = {
       id: Date.now(),
